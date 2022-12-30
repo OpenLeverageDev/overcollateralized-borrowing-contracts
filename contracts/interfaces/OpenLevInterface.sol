@@ -19,4 +19,7 @@ interface OpenLevInterface {
 
     function markets(uint16 marketId) external view returns (Market memory market);
 
+    function taxes(uint16 marketId, address token, uint index) external view returns (uint24);
+
+    function getMarketSupportDexs(uint16 marketId) external view returns (uint32[] memory);
 }

@@ -10,7 +10,8 @@ abstract contract Adminable {
     event NewPendingAdmin(address oldPendingAdmin, address newPendingAdmin);
 
     event NewAdmin(address oldAdmin, address newAdmin);
-    constructor () {
+
+    constructor() {
         developer = payable(msg.sender);
     }
 

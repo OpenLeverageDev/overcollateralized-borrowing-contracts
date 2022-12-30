@@ -3,6 +3,7 @@
 pragma solidity >0.7.6;
 
 interface LPoolInterface {
+    function underlying() external view returns (address);
 
     function totalBorrows() external view returns (uint);
 
@@ -15,5 +16,4 @@ interface LPoolInterface {
     function repayBorrowBehalf(address borrower, uint repayAmount) external;
 
     function repayBorrowEndByOpenLev(address borrower, uint repayAmount) external;
-
 }

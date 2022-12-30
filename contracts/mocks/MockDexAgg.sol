@@ -2,7 +2,7 @@
 pragma solidity >0.7.6;
 
 import "../interfaces/DexAggregatorInterface.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./MockToken.sol";
 
 pragma experimental ABIEncoderV2;
 
@@ -13,24 +13,20 @@ contract MockDexAgg is DexAggregatorInterface {
     uint256 private _hAvgPrice;
     uint256 private _timestamp;
     uint256 private _timeWindow;
+    uint  token0Liq;
+    uint token1Liq;
 
-    function setPrice(
-        uint256 price_,
-        uint256 cAvgPrice_,
-        uint256 hAvgPrice_,
-        uint256 timestamp_
-    ) external {
+    uint buyAmount;
+    uint sellAmount;
+
+    function setPrice(uint256 price_, uint256 cAvgPrice_, uint256 hAvgPrice_, uint256 timestamp_) external {
         _price = price_;
         _cAvgPrice = cAvgPrice_;
         _hAvgPrice = hAvgPrice_;
         _timestamp = timestamp_;
     }
 
-    function getPrice(
-        address desToken,
-        address quoteToken,
-        bytes memory data
-    ) external view override returns (uint256 price, uint8 decimals) {
+    function getPrice(address desToken, address quoteToken, bytes memory data) external view override returns (uint256 price, uint8 decimals) {
         desToken;
         quoteToken;
         data;
@@ -38,23 +34,7 @@ contract MockDexAgg is DexAggregatorInterface {
         decimals = _decimals;
     }
 
-    function getPriceCAvgPriceHAvgPrice(
-        address desToken,
-        address quoteToken,
-        uint32 secondsAgo,
-        bytes memory dexData
-    )
-        external
-        view
-        override
-        returns (
-            uint256 price,
-            uint256 cAvgPrice,
-            uint256 hAvgPrice,
-            uint8 decimals,
-            uint256 timestamp
-        )
-    {
+    function getPriceCAvgPriceHAvgPrice(address desToken, address quoteToken, uint32 secondsAgo, bytes memory dexData) external view override returns (uint256 price, uint256 cAvgPrice, uint256 hAvgPrice, uint8 decimals, uint256 timestamp) {
         desToken;
         quoteToken;
         secondsAgo;
@@ -66,16 +46,56 @@ contract MockDexAgg is DexAggregatorInterface {
         timestamp = _timestamp;
     }
 
-    function updatePriceOracle(
-        address desToken,
-        address quoteToken,
-        uint32 timeWindow,
-        bytes memory data
-    ) external override returns (bool) {
+    function updatePriceOracle(address desToken, address quoteToken, uint32 timeWindow, bytes memory data) external override returns (bool) {
         desToken;
         quoteToken;
         data;
         _timeWindow = timeWindow;
         return true;
+    }
+
+    function setLiquidity(uint _token0Liq, uint _token1Liq) external {
+        token0Liq = _token0Liq;
+        token1Liq = _token1Liq;
+    }
+
+    function getToken0Liquidity(address token0, address token1, bytes memory dexData) external view returns (uint) {
+        token0;
+        token1;
+        dexData;
+        return token0Liq;
+    }
+
+    function getPairLiquidity(address token0, address token1, bytes memory dexData) external view override returns (uint, uint) {
+        token0;
+        token1;
+        dexData;
+        return (token0Liq, token1Liq);
+    }
+
+    function setBuyAndSellAmount(uint _buyAmount, uint _sellAmount) external {
+        buyAmount = _buyAmount;
+        sellAmount = _sellAmount;
+    }
+
+    function buy(address buyToken, address sellToken, uint24 buyTax, uint24 sellTax, uint _buyAmount, uint _maxSellAmount, bytes memory data) external override returns (uint) {
+        buyTax;
+        sellTax;
+        data;
+        uint mockBuyAmount = buyAmount == 0 ? _buyAmount : buyAmount;
+        uint mockSellAmount = sellAmount == 0 ? _maxSellAmount : sellAmount;
+        MockToken(buyToken).mint(address(this), mockBuyAmount);
+        MockToken(buyToken).transfer(msg.sender, mockBuyAmount);
+        MockToken(sellToken).transferFrom(msg.sender, address(this), mockSellAmount);
+        return mockSellAmount;
+    }
+
+    function sell(address buyToken, address sellToken, uint _sellAmount, uint minBuyAmount, bytes memory data) external override returns (uint) {
+        data;
+        uint mockBuyAmount = buyAmount == 0 ? minBuyAmount : buyAmount;
+        MockToken(buyToken).mint(address(this), mockBuyAmount);
+        MockToken(buyToken).transfer(msg.sender, mockBuyAmount);
+        MockToken(sellToken).transferFrom(msg.sender, address(this), _sellAmount);
+        return mockBuyAmount;
     }
 }
