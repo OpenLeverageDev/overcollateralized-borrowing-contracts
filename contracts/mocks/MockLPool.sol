@@ -68,7 +68,7 @@ contract MockLPool is LPoolInterface {
         accrueInterest();
         MockToken(underlying).transferFrom(msg.sender, address(this), repayAmount);
         uint accBorrows = borrowBalanceCurrentInternal(borrower);
-        accountBorrows[borrower].principal -= accBorrows;
+        accountBorrows[borrower].principal = 0;
         accountBorrows[borrower].borrowIndex = borrowIndex;
         totalBorrows -= accBorrows;
     }
@@ -87,7 +87,7 @@ contract MockLPool is LPoolInterface {
         uint blockDelta = currentBlockNumber - accrualBlockNumberPrior;
 
         uint simpleInterestFactor = borrowRateOfPerBlock * blockDelta;
-        uint interestAccumulated = simpleInterestFactor * borrowIndexPrior / RATE_DENOMINATOR;
+        uint interestAccumulated = simpleInterestFactor * borrowsPrior / RATE_DENOMINATOR;
         uint totalBorrowsNew = borrowsPrior + interestAccumulated;
         uint borrowIndexNew = borrowIndexPrior + borrowIndexPrior * simpleInterestFactor / RATE_DENOMINATOR;
 
@@ -98,6 +98,9 @@ contract MockLPool is LPoolInterface {
     }
 
     function borrowBalanceCurrentInternal(address account) internal view returns (uint){
+        if (accountBorrows[account].principal == 0) {
+            return 0;
+        }
         uint cBorrowIndex = calBorrowIndex();
         return accountBorrows[account].principal * cBorrowIndex / accountBorrows[account].borrowIndex;
     }

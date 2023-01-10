@@ -5,6 +5,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import "./interfaces/LPoolInterface.sol";
 import "./libraries/TransferHelper.sol";
 import "./common/IWETH.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 library OPBorrowingLib {
     using TransferHelper for IERC20;
@@ -48,6 +49,10 @@ library OPBorrowingLib {
 
     function balanceOf(IERC20 token) internal view returns (uint256) {
         return token.balanceOf(address(this));
+    }
+
+    function decimals(address token) internal view returns (uint256) {
+        return ERC20(token).decimals();
     }
 
     function safeApprove(IERC20 token, address spender, uint256 amount) internal {

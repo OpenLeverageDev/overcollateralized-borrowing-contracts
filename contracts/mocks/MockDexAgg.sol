@@ -16,13 +16,15 @@ contract MockDexAgg is DexAggregatorInterface {
     uint  token0Liq;
     uint token1Liq;
 
+    bool buySuccessful = true;
+
     uint buyAmount;
     uint sellAmount;
 
     function setPrice(uint256 price_, uint256 cAvgPrice_, uint256 hAvgPrice_, uint256 timestamp_) external {
-        _price = price_;
-        _cAvgPrice = cAvgPrice_;
-        _hAvgPrice = hAvgPrice_;
+        _price = price_ * (10 ** 24);
+        _cAvgPrice = cAvgPrice_ * (10 ** 24);
+        _hAvgPrice = hAvgPrice_ * (10 ** 24);
         _timestamp = timestamp_;
     }
 
@@ -78,10 +80,15 @@ contract MockDexAgg is DexAggregatorInterface {
         sellAmount = _sellAmount;
     }
 
+    function setBuySuccessful(bool _buySuccessful) external {
+        buySuccessful = _buySuccessful;
+    }
+
     function buy(address buyToken, address sellToken, uint24 buyTax, uint24 sellTax, uint _buyAmount, uint _maxSellAmount, bytes memory data) external override returns (uint) {
         buyTax;
         sellTax;
         data;
+        assert(buySuccessful);
         uint mockBuyAmount = buyAmount == 0 ? _buyAmount : buyAmount;
         uint mockSellAmount = sellAmount == 0 ? _maxSellAmount : sellAmount;
         MockToken(buyToken).mint(address(this), mockBuyAmount);

@@ -141,6 +141,8 @@ interface IOPBorrowing {
 
     function liquidate(uint16 marketId, bool collateralIndex, address borrower) external;
 
+    function collateralRatio(uint16 marketId, bool collateralIndex, address borrower) external view returns (uint current);
+
     /*** Admin Functions ***/
     function migrateOpenLevMarkets(uint16 from, uint16 to) external;
 

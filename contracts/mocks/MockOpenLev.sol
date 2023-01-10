@@ -5,21 +5,22 @@ pragma solidity >0.7.6;
 import "../interfaces/OpenLevInterface.sol";
 
 contract MockOpenLev is OpenLevInterface {
-    Market public market;
-    uint32[] public dexs;
     mapping(address => mapping(uint => uint24)) private _taxes;
+    mapping(uint16 => Market) private _markets;
+    mapping(uint16 => uint32[]) private dexs;
 
-    function setMarket(address pool0, address pool1, address token0, address token1, uint32[] memory _dexs) external {
+    function setMarket(uint16 marketId, address pool0, address pool1, address token0, address token1, uint32[] memory _dexs) external {
+        Market memory market;
         market.pool0 = pool0;
         market.pool1 = pool1;
         market.token0 = token0;
         market.token1 = token1;
-        dexs = _dexs;
+        dexs[marketId] = _dexs;
+        _markets[marketId] = market;
     }
 
     function markets(uint16 marketId) external view override returns (Market memory){
-        marketId;
-        return market;
+        return _markets[marketId];
     }
 
     function setTaxRate(address token, uint index, uint24 tax) external {
@@ -32,7 +33,6 @@ contract MockOpenLev is OpenLevInterface {
     }
 
     function getMarketSupportDexs(uint16 marketId) external view override returns (uint32[] memory){
-        marketId;
-        return dexs;
+        return dexs[marketId];
     }
 }
