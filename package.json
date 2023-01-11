@@ -50,7 +50,7 @@
     "prettier": "^2.7.1",
     "prettier-plugin-solidity": "^1.0.0-beta.24",
     "sol-merger": "^3.1.0",
-    "solidity-coverage": "^0.7.16",
+    "solidity-coverage": "^0.8.2",
     "truffle-plugin-stdjsonin": "github:mhrsalehi/truffle-plugin-stdjsonin",
     "truffle-plugin-verify": "^0.5.18"
   }
