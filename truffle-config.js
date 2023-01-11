@@ -75,12 +75,12 @@ module.exports = {
     mocha: {
         timeout: 30 * 60 * 1000,
         before_timeout: 30 * 60 * 1000,
-        // reporter: 'eth-gas-reporter',
-        // reporterOptions: {
-        //     currency: 'USD',
-        //     showTimeSpent: true,
-        //     excludeContracts: ['Migrations']
-        // },
+        reporter: 'eth-gas-reporter',
+        reporterOptions: {
+            currency: 'USD',
+            showTimeSpent: true,
+            excludeContracts: ['Migrations']
+        },
     },
     plugins: ["truffle-contract-size", 'truffle-plugin-verify', "solidity-coverage"],
 

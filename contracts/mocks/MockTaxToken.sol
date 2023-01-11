@@ -3,16 +3,26 @@ pragma solidity >0.7.6;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract MockDeflationToken is ERC20 {
-    uint deflationRatio = 100;
+contract MockTaxToken is ERC20 {
     mapping(address => uint256) private _balances;
     uint256 private _totalSupply;
+
+    address public dexAgg;
+    uint public transFees;
+    uint public sellFees;
+    uint public buyFees;
 
     constructor(string memory name_) ERC20(name_, name_) {
         mint(msg.sender, 10000000 ether);
     }
-    function setDeflationRatio(uint _deflationRatio) public {
-        deflationRatio = _deflationRatio;
+    function setDexAgg(address _dexAgg) public {
+        dexAgg = _dexAgg;
+    }
+
+    function setFees(uint _transFees, uint _sellFees, uint _buyFees) public {
+        transFees = _transFees;
+        sellFees = _sellFees;
+        buyFees = _buyFees;
     }
 
     function mint(address to, uint256 amount) public {
@@ -21,17 +31,9 @@ contract MockDeflationToken is ERC20 {
 
     function _mint(address account, uint256 amount) internal override {
         require(account != address(0), "ERC20: mint to the zero address");
-        _totalSupply += ((amount) * 100 + deflationRatio - 1) / deflationRatio;
-        _balances[account] += ((amount) * 100 + deflationRatio - 1) / deflationRatio;
+        _totalSupply += amount;
+        _balances[account] += amount;
         emit Transfer(address(0), account, amount);
-    }
-
-    function balanceOf(address account) public view override returns (uint256) {
-        return _balanceOf(account);
-    }
-
-    function _balanceOf(address account) internal view returns (uint256){
-        return _balances[account] * deflationRatio / 100;
     }
 
     function transfer(address to, uint256 amount) public override returns (bool) {
@@ -42,19 +44,29 @@ contract MockDeflationToken is ERC20 {
 
     function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
         _spendAllowance(from, msg.sender, amount);
-
         _transfer(from, to, amount);
         return true;
     }
 
-    function _transfer(address from, address to, uint amount) internal override {
-        uint256 fromBalance = _balanceOf(from);
-        require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
-        uint rawAmount = ((amount) * 100 + deflationRatio - 1) / deflationRatio;
-    unchecked {
-        _balances[from] -= rawAmount;
+    function balanceOf(address account) public view override returns (uint256) {
+        return _balances[account];
     }
-        _balances[to] += rawAmount;
+
+    function _transfer(address from, address to, uint amount) internal override {
+        uint256 fromBalance = _balances[from];
+        require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
+
+    unchecked {
+        _balances[from] -= amount;
+    }
+        if (from == dexAgg) {
+            amount = amount - (amount * buyFees / 100);
+        } else if (to == dexAgg) {
+            amount = amount - (amount * sellFees / 100);
+        } else {
+            amount = amount - (amount * transFees / 100);
+        }
+        _balances[to] += amount;
 
         emit Transfer(from, to, amount);
     }

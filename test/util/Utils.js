@@ -20,3 +20,7 @@ exports.ltBN = (expected, actual) => {
 exports.gtBN = (expected, actual) => {
     assert.equal(toBN(expected).gt(toBN(actual)), true);
 }
+
+exports.percent = (m, n) => {
+    return toBN(m).mul(toBN(n)).div(toBN(100));
+}
