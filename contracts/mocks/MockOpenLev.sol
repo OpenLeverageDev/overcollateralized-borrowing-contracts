@@ -24,7 +24,7 @@ contract MockOpenLev is OpenLevInterface {
     }
 
     function setTaxRate(address token, uint index, uint24 tax) external {
-        _taxes[token][index] = tax;
+        _taxes[token][index] = tax * 10000;
     }
 
     function taxes(uint16 marketId, address token, uint index) external view override returns (uint24){

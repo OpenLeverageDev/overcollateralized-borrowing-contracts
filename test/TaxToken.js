@@ -10,7 +10,7 @@ const MockTaxToken = artifacts.require("MockTaxToken");
 
 const MockXOLE = artifacts.require("MockXOLE");
 const m = require('mocha-logger');
-const {toWei, maxUint, equalBN, gtBN, toBN, percent} = require("./util/Utils");
+const {toWei, maxUint, equalBN, gtBN, toBN, percent, toETH} = require("./util/Utils");
 const {expectRevert} = require("@openzeppelin/test-helpers");
 
 contract("OPBorrowing", async accounts => {
@@ -87,8 +87,102 @@ contract("OPBorrowing", async accounts => {
 
         await token0.setDexAgg(dexAggCtr.address);
         await token1.setDexAgg(dexAggCtr.address);
+        await xoleCtr.mint(toWei(liquidatorXOLEHeld), {from: liquidator});
 
     });
+
+    it("borrow tax token successful", async () => {
+        let collateral = toWei(10000);
+        let collateralIndex = false;
+        let collateralToken = token0;
+        let borrowToken = token1;
+        let borrowPool = pool1;
+        let borrowing = toWei(5000);
+        await collateralToken.mint(borrower1, collateral);
+        let transFees = 2;
+        await borrowToken.setFees(transFees, 0, 0);
+        await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1});
+        let activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        equalBN(collateral, activeBorrows.collateral);
+        let collateralRatio = await borrowingCtr.collateralRatio(market0Id, collateralIndex, borrower1);
+        equalBN("10000", collateralRatio);
+        equalBN(borrowing, await borrowPool.borrowBalanceCurrent(borrower1));
+        equalBN(percent(percent(borrowing, 100 - transFees).sub(percent(borrowing, 2)), 100 - transFees), await borrowToken.balanceOf(borrower1));
+    })
+
+    it("liquidate tax token successful", async () => {
+        let collateral = toWei(10000);
+        let collateralIndex = false;
+        let collateralToken = token0;
+        let borrowToken = token1;
+        let borrowPool = pool1;
+        let borrowing = toWei(5000);
+        await collateralToken.mint(borrower1, collateral);
+        await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1});
+
+        let activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        // active borrows
+        equalBN(collateral, activeBorrows.collateral);
+        let collateralRatio = await borrowingCtr.collateralRatio(market0Id, collateralIndex, borrower1);
+        equalBN("10000", collateralRatio);
+        // set tax
+        let transFees = 2;
+        let buyFees = 1;
+        let sellFees = 4;
+        await borrowToken.setFees(transFees, 0, buyFees);
+        await openLevCtr.setTaxRate(borrowToken.address, 0, transFees);
+        await openLevCtr.setTaxRate(borrowToken.address, 2, buyFees);
+        await collateralToken.setFees(0, sellFees, 0);
+        await openLevCtr.setTaxRate(collateralToken.address, 1, sellFees);
+        //  liquidate
+        let insuranceBefore = (await borrowingCtr.insurances(market0Id)).insurance1;
+        let sellAmount = collateral.div(toBN(2));
+        await dexAggCtr.setBuyAndSellAmount(0, sellAmount);
+        let tx = await borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator});
+        let liqEvent = tx.receipt.logs[0];
+        m.log("liquidateFees", liqEvent.args.liquidateFees.toString());
+        equalBN("50035000000000000001", liqEvent.args.liquidateFees);
+        activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        equalBN("0", activeBorrows.collateral);
+        equalBN("0", await borrowingCtr.totalShares(collateralToken.address));
+        equalBN("0", await borrowPool.borrowBalanceCurrent(borrower1));
+        equalBN(collateral.sub(sellAmount.add(toBN(1)).mul(toBN(100)).div(toBN(96))), await collateralToken.balanceOf(borrower1));
+        equalBN(toBN(19), toETH(await borrowToken.balanceOf(liquidator)));
+        equalBN(toBN(4), toETH(await borrowToken.balanceOf(buyBackCtr.address)));
+        equalBN(toBN(15), toETH((await borrowingCtr.insurances(market0Id)).insurance1.sub(insuranceBefore)));
+        equalBN(await borrowToken.balanceOf(borrowingCtr.address), await borrowingCtr.totalShares(borrowToken.address));
+        equalBN((await borrowingCtr.insurances(market0Id)).insurance1, await borrowingCtr.totalShares(borrowToken.address));
+    })
+
+    it("liquidate tax token in 'BLR' error case", async () => {
+        let collateral = toWei(10000);
+        let collateralIndex = false;
+        let collateralToken = token0;
+        let borrowToken = token1;
+        let borrowing = toWei(5000);
+
+        await collateralToken.mint(borrower1, collateral);
+        await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1});
+
+        let activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        // active borrows
+        equalBN(collateral, activeBorrows.collateral);
+        let collateralRatio = await borrowingCtr.collateralRatio(market0Id, collateralIndex, borrower1);
+        equalBN("10000", collateralRatio);
+        // set tax
+        let transFees = 2;
+        let buyFees = 1;
+        let sellFees = 4;
+        await borrowToken.setFees(transFees, 0, buyFees);
+        await collateralToken.setFees(0, sellFees, 0);
+        //  liquidate
+        let sellAmount = collateral.div(toBN(2));
+        await dexAggCtr.setBuyAndSellAmount(0, sellAmount);
+        await xoleCtr.mint(toWei(liquidatorXOLEHeld), {from: liquidator});
+        await expectRevert(
+            borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator}),
+            "BLR")
+    })
 
     it("move deflationary token insurance successful", async () => {
         let collateral = toWei(100);
@@ -104,7 +198,6 @@ contract("OPBorrowing", async accounts => {
         let moveInsurance = insurance1.div(toBN(4));
         await borrowingCtr.moveInsurance(market0Id, true, liquidator, moveInsurance, {from: adminAcc});
         let moveBalance = await borrowToken.balanceOf(liquidator);
-        m.log("moveBalance", moveBalance);
         let insuranceAfter = toBN((await borrowingCtr.insurances(market0Id)).insurance1);
         equalBN(insurance1.sub(moveInsurance), insuranceAfter);
         equalBN(insuranceAfter, await borrowingCtr.totalShares(borrowToken.address));

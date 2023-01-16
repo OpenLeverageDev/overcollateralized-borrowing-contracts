@@ -3,6 +3,7 @@ pragma solidity >0.7.6;
 
 import "../interfaces/DexAggregatorInterface.sol";
 import "./MockToken.sol";
+import "../libraries/Utils.sol";
 
 pragma experimental ABIEncoderV2;
 
@@ -91,9 +92,9 @@ contract MockDexAgg is DexAggregatorInterface {
         assert(buySuccessful);
         uint mockBuyAmount = buyAmount == 0 ? _buyAmount : buyAmount;
         uint mockSellAmount = sellAmount == 0 ? _maxSellAmount : sellAmount;
-        MockToken(buyToken).mint(address(this), mockBuyAmount);
-        MockToken(buyToken).transfer(msg.sender, mockBuyAmount);
-        MockToken(sellToken).transferFrom(msg.sender, address(this), mockSellAmount);
+        MockToken(buyToken).mint(address(this), Utils.toAmountBeforeTax(mockBuyAmount, buyTax));
+        MockToken(buyToken).transfer(msg.sender, Utils.toAmountBeforeTax(mockBuyAmount, buyTax));
+        MockToken(sellToken).transferFrom(msg.sender, address(this), Utils.toAmountBeforeTax(mockSellAmount, sellTax));
         return mockSellAmount;
     }
 

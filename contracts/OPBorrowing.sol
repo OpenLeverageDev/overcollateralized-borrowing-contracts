@@ -238,7 +238,6 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
             OPBorrowingLib.repay(borrowVars.borrowPool, borrower, liquidateVars.repayAmount);
             // check the taxToken tax rate
             require(OPBorrowingLib.borrowStored(borrowVars.borrowPool, borrower) == 0, "BG0");
-            // collect liquidation fees
         unchecked {
             liquidateVars.liquidationFees = liquidateVars.buyAmount - liquidateVars.repayAmount;
         }

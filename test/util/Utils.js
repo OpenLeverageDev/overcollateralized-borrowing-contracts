@@ -5,6 +5,9 @@ exports.toBN = toBN = function (bn) {
 exports.toWei = (amount) => {
     return toBN(1e18).mul(toBN(amount));
 }
+exports.toETH = (amount) => {
+    return toBN(amount).div(toBN(1e18));
+}
 
 exports.maxUint = () => {
     let max = toBN(2).pow(toBN(256)).sub(toBN(1));
