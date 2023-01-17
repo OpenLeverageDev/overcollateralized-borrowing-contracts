@@ -10,6 +10,7 @@ import "./interfaces/XOLEInterface.sol";
 import "./interfaces/OPBuyBackInterface.sol";
 
 contract OPBorrowingStorage {
+
     event NewMarket(uint16 marketId, LPoolInterface pool0, LPoolInterface pool1, address token0, address token1, uint32 dex, uint token0Liq, uint token1Liq);
 
     event CollBorrow(address indexed borrower, uint16 marketId, bool collateralIndex, uint collateral, uint borrow, uint borrowFees);
@@ -38,46 +39,46 @@ contract OPBorrowingStorage {
     );
 
     struct Market {
-        LPoolInterface pool0;
-        LPoolInterface pool1;
-        address token0;
-        address token1;
-        uint32 dex;
+        LPoolInterface pool0;// pool0 address
+        LPoolInterface pool1;// pool1 address
+        address token0;// token0 address
+        address token1;// token1 address
+        uint32 dex;// decentralized exchange
     }
 
     struct MarketConf {
-        uint16 collateralRatio; // 6000 => 60%
-        uint16 maxLiquidityRatio; // 1000 => 10%
-        uint16 borrowFeesRatio; // 30 => 0.3%
-        uint16 insuranceRatio; // 3000 => 30%
-        uint16 poolReturnsRatio; // 3000 => 30%
-        uint16 liquidateFeesRatio; // 100 => 1%
-        uint16 liquidatorReturnsRatio; // 3000 => 30%
-        uint16 liquidateInsuranceRatio; // 3000 => 30%
-        uint16 liquidatePoolReturnsRatio; // 3000 => 30%
-        uint16 liquidateMaxLiquidityRatio; // 1000=> 10%
-        uint16 twapDuration; // 60 =>60s
+        uint16 collateralRatio; //  the collateral ratio, 6000 => 60%
+        uint16 maxLiquidityRatio; // the borrowing fees ratio, 1000 => 10%
+        uint16 borrowFeesRatio; // the borrowing fees ratio, 30 => 0.3%
+        uint16 insuranceRatio; // the insurance percentage of the borrowing fees, 3000 => 30%
+        uint16 poolReturnsRatio; // the pool's returns percentage of the borrowing fees, 3000 => 30%
+        uint16 liquidateFeesRatio; // the liquidation fees ratio, 100 => 1%
+        uint16 liquidatorReturnsRatio; // the liquidator returns percentage of the liquidation fees, 3000 => 30%
+        uint16 liquidateInsuranceRatio; // the insurance percentage of the liquidation fees, 3000 => 30%
+        uint16 liquidatePoolReturnsRatio; // the pool's returns percentage of the liquidation fees, 3000 => 30%
+        uint16 liquidateMaxLiquidityRatio; // the maximum liquidation amount cannot be exceeded dex liquidity*ratio, 1000=> 10%
+        uint16 twapDuration; // the TWAP duration, 60 => 60s
     }
 
     struct Borrow {
-        uint collateral;
-        uint128 lastBlockNum;
+        uint collateral;// the collateral share
+        uint128 lastBlockNum;// the last updated block number
     }
 
     struct Liquidity {
-        uint token0Liq;
-        uint token1Liq;
+        uint token0Liq;// the token0 liquidity
+        uint token1Liq;// the token1 liquidity
     }
 
     struct Insurance {
-        uint insurance0;
-        uint insurance1;
+        uint insurance0; // the token0 insurance
+        uint insurance1;// the token1 insurance
     }
 
     struct LiquidationConf {
-        uint128 liquidatorXOLEHeld;
-        uint8 priceDiffRatio; // 10 => 10%
-        OPBuyBackInterface buyBack;
+        uint128 liquidatorXOLEHeld;//  the minimum amount of xole held by liquidator
+        uint8 priceDiffRatio; // the maximum ratio of real price diff TWAP, 10 => 10%
+        OPBuyBackInterface buyBack; // the ole buyback contract address
     }
 
     uint internal constant RATIO_DENOMINATOR = 10000;
@@ -92,19 +93,22 @@ contract OPBorrowingStorage {
 
     XOLEInterface public immutable xOLE;
 
+    // mapping of marketId to market info
     mapping(uint16 => Market) public markets;
 
+    // mapping of marketId to market config
     mapping(uint16 => MarketConf) public marketsConf;
 
-    // borrower => marketId => collateralIndex
+    // mapping of borrower, marketId, collateralIndex to collateral balances
     mapping(address => mapping(uint16 => mapping(bool => Borrow))) public activeBorrows;
 
+    // mapping of marketId to insurances
     mapping(uint16 => Insurance) public insurances;
 
-    // time weighted average liquidity
+    // mapping of marketId to time weighted average liquidity
     mapping(uint16 => Liquidity) public twaLiquidity;
 
-    // token => shares
+    // mapping of token address to total shares
     mapping(address => uint) public totalShares;
 
     MarketConf public marketDefConf;
@@ -133,6 +137,7 @@ interface IOPBorrowing {
     // only controller
     function addMarket(uint16 marketId, LPoolInterface pool0, LPoolInterface pool1, bytes memory dexData) external;
 
+    /*** Borrower Functions ***/
     function borrow(uint16 marketId, bool collateralIndex, uint collateral, uint borrowing) external payable;
 
     function repay(uint16 marketId, bool collateralIndex, uint repayAmount, bool isRedeem) external payable;
@@ -154,5 +159,5 @@ interface IOPBorrowing {
 
     function setLiquidationConf(OPBorrowingStorage.LiquidationConf calldata _liquidationConf) external;
 
-    function moveInsurance(uint16 marketId, bool poolIndex, address to, uint moveShare) external;
+    function moveInsurance(uint16 marketId, bool tokenIndex, address to, uint moveShare) external;
 }
