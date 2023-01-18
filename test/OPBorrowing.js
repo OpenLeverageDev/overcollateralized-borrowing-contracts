@@ -107,7 +107,6 @@ contract("OPBorrowing", async accounts => {
         equalBN("0", await collateralToken.balanceOf(borrower1));
         // borrowing
         equalBN(borrowing, await borrowPool.borrowBalanceStored(borrower1));
-        equalBN(1, await controllerCtr.borrowCounter());
         // insurance
         let insurances = await borrowingCtr.insurances(market0Id);
         equalBN("0", insurances.insurance0);
@@ -157,7 +156,6 @@ contract("OPBorrowing", async accounts => {
         equalBN("0", await collateralToken.balanceOf(borrower1));
         // borrowing
         equalBN(borrowing, await borrowPool.borrowBalanceStored(borrower1));
-        equalBN(1, await controllerCtr.borrowCounter());
         // insurance
         let insurances = await borrowingCtr.insurances(market0Id);
         equalBN("0", insurances.insurance1);
@@ -270,7 +268,6 @@ contract("OPBorrowing", async accounts => {
         let lastBlockNum = activeBorrows.lastBlockNum;
         await borrowingCtr.redeem(market0Id, collateralIndex, toWei(1000), {from: borrower1});
         equalBN(toWei(1000), await collateralToken.balanceOf(borrower1));
-        equalBN(1, await controllerCtr.redeemCounter());
         activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
         equalBN(toWei(9000), activeBorrows.collateral);
         equalBN(toWei(9000), await borrowingCtr.totalShares(collateralToken.address));
@@ -286,7 +283,6 @@ contract("OPBorrowing", async accounts => {
         await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1});
         await borrowingCtr.redeem(market0Id, collateralIndex, toWei(1000), {from: borrower1});
         equalBN(toWei(1000), await collateralToken.balanceOf(borrower1));
-        equalBN(1, await controllerCtr.redeemCounter());
         let activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
         equalBN(toWei(9000), activeBorrows.collateral);
         equalBN(toWei(9000), await borrowingCtr.totalShares(collateralToken.address));
@@ -355,7 +351,6 @@ contract("OPBorrowing", async accounts => {
         let lastBlockNum = activeBorrows.lastBlockNum;
         await borrowingCtr.repay(market0Id, collateralIndex, toWei(1000), false, {from: borrower1});
         equalBN(toWei(960), await borrowToken.balanceOf(borrower1));
-        equalBN(1, await controllerCtr.repayCounter());
         equalBN("1000200000000000000000", await borrowPool.borrowBalanceStored(borrower1));
         activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
         gtBN(activeBorrows.lastBlockNum, lastBlockNum);
@@ -546,7 +541,6 @@ contract("OPBorrowing", async accounts => {
         // liquidate
         await xoleCtr.mint(toWei(liquidatorXOLEHeld), {from: liquidator});
         await borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator});
-        equalBN(1, await controllerCtr.liquidateCounter());
         activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
         equalBN(0, activeBorrows.collateral);
         gtBN(activeBorrows.lastBlockNum, lastBlockNum);
@@ -584,7 +578,6 @@ contract("OPBorrowing", async accounts => {
         // liquidate
         await xoleCtr.mint(toWei(liquidatorXOLEHeld), {from: liquidator});
         await borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator});
-        equalBN(1, await controllerCtr.liquidateCounter());
         let activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
         equalBN(0, activeBorrows.collateral);
         equalBN("0", await borrowPool.borrowBalanceStored(borrower1));
@@ -979,6 +972,21 @@ contract("OPBorrowing", async accounts => {
             "BE0")
     })
 
+    it("suspend successful", async () => {
+        await controllerCtr.setSuspend(true, {from: adminAcc});
+        await expectRevert(
+            borrowingCtr.borrow(market0Id, true, 0, 0, {from: borrower1}),
+            "Suspended borrowing")
+        await expectRevert(
+            borrowingCtr.repay(market0Id, true, 0, false, {from: borrower1}),
+            "Suspended borrowing")
+        await expectRevert(
+            borrowingCtr.redeem(market0Id, true, 0, {from: borrower1}),
+            "Suspended borrowing")
+        await expectRevert(
+            borrowingCtr.liquidate(market0Id, true, borrower1, {from: liquidator}),
+            "Suspended borrowing")
+    })
 
     it("migrate markets successful", async () => {
         let dexs = [1];
@@ -1060,15 +1068,15 @@ contract("OPBorrowing", async accounts => {
         equalBN(moveInsurance, await borrowToken.balanceOf(liquidator));
         // move gt insurance
         await expectRevert(
-            borrowingCtr.moveInsurance(market0Id, true, liquidator, insurance1, {from: adminAcc,gas:800000}),
+            borrowingCtr.moveInsurance(market0Id, true, liquidator, insurance1, {from: adminAcc, gas: 800000}),
             "Arithmetic overflow")
 
         await expectRevert(
-            borrowingCtr.moveInsurance(market0Id, false, liquidator, insurance1, {from: adminAcc,gas:800000}),
+            borrowingCtr.moveInsurance(market0Id, false, liquidator, insurance1, {from: adminAcc, gas: 800000}),
             "Arithmetic overflow")
 
         await expectRevert(
-            borrowingCtr.moveInsurance(market0Id, true, liquidator, insurance1, {from: liquidator,gas:800000}),
+            borrowingCtr.moveInsurance(market0Id, true, liquidator, insurance1, {from: liquidator, gas: 800000}),
             "caller must be admin")
     })
 

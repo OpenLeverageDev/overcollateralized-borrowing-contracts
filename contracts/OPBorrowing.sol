@@ -476,7 +476,8 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
         return fees;
     }
 
-    function collectLiquidationFee(uint16 marketId, bool collateralIndex, uint liquidationFees, address borrowToken, LPoolInterface borrowPool, uint borrowTotalReserve, uint borrowTotalShare) internal {
+    function collectLiquidationFee(uint16 marketId, bool collateralIndex, uint liquidationFees, address borrowToken,
+        LPoolInterface borrowPool, uint borrowTotalReserve, uint borrowTotalShare) internal returns (bool buyBackSuccess){
         if (liquidationFees > 0) {
             MarketConf storage marketConf = marketsConf[marketId];
             uint poolReturns = (liquidationFees * marketConf.liquidatePoolReturnsRatio) / RATIO_DENOMINATOR;
@@ -495,7 +496,13 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
             uint buyBackAmount = liquidationFees - poolReturns - insurance - liquidatorReturns;
             if (buyBackAmount > 0) {
                 OPBorrowingLib.safeApprove(IERC20(borrowToken), address(liquidationConf.buyBack), buyBackAmount);
-                liquidationConf.buyBack.transferIn(borrowToken, buyBackAmount);
+                (buyBackSuccess,) = address(liquidationConf.buyBack).call(
+                    abi.encodeWithSelector(
+                        liquidationConf.buyBack.transferIn.selector,
+                        borrowToken,
+                        buyBackAmount
+                    )
+                );
             }
         }
     }

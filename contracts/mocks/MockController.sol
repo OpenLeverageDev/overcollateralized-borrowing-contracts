@@ -7,10 +7,8 @@ import "../IOPBorrowing.sol";
 import "./MockLPool.sol";
 
 contract MockController is ControllerInterface {
-    uint public borrowCounter;
-    uint public repayCounter;
-    uint public redeemCounter;
-    uint public liquidateCounter;
+
+    bool public suspend;
     IOPBorrowing public borrowing;
     uint16 private _marketId;
     uint public borrowRateOfPerBlock;
@@ -23,6 +21,10 @@ contract MockController is ControllerInterface {
         borrowRateOfPerBlock = _borrowRateOfPerBlock;
     }
 
+    function setSuspend(bool _suspend) external {
+        suspend = _suspend;
+    }
+
     function createLPoolPair(address tokenA, address tokenB, uint16 marginLimit, bytes memory dexData) external {
         marginLimit;
         MockLPool pool0 = new MockLPool(tokenA, borrowRateOfPerBlock);
@@ -32,25 +34,26 @@ contract MockController is ControllerInterface {
         _marketId++;
     }
 
-    function collBorrowAllowed(uint marketId, address borrower, bool collateralIndex) external override {
-        borrowCounter++;
-        marketId;
+    function collBorrowAllowed(uint marketId, address borrower, bool collateralIndex) external override onlyOpBorrowingNotSuspended(marketId) view returns (bool) {
         borrower;
         collateralIndex;
+        return true;
     }
 
-    function collRepayAllowed(uint marketId) external override {
-        repayCounter++;
-        marketId;
+    function collRepayAllowed(uint marketId) external override onlyOpBorrowingNotSuspended(marketId) view returns (bool)  {
+        return true;
     }
 
-    function collRedeemAllowed(uint marketId) external override {
-        redeemCounter++;
-        marketId;
+    function collRedeemAllowed(uint marketId) external override onlyOpBorrowingNotSuspended(marketId) view returns (bool)  {
+        return true;
     }
 
-    function collLiquidateAllowed(uint marketId) external override {
-        liquidateCounter++;
-        marketId;
+    function collLiquidateAllowed(uint marketId) external override onlyOpBorrowingNotSuspended(marketId) view returns (bool)  {
+        return true;
+    }
+
+    modifier onlyOpBorrowingNotSuspended(uint marketId) {
+        require(!suspend, 'Suspended borrowing');
+        _;
     }
 }

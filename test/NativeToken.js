@@ -108,7 +108,6 @@ contract("OPBorrowing", async accounts => {
         equalBN("0", await collateralToken.balanceOf(borrower1));
         // borrowing
         equalBN(borrowing, await borrowPool.borrowBalanceStored(borrower1));
-        equalBN(1, await controllerCtr.borrowCounter());
     })
 
 
