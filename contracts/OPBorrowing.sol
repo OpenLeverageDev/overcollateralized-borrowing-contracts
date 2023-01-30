@@ -91,9 +91,7 @@ contract OPBorrowing is
         // update borrower last block number
         updateBorrowerBlockNum(borrower, marketId, collateralIndex);
 
-        Borrow storage accBorrow = activeBorrows[borrower][marketId][
-            collateralIndex
-        ];
+        Borrow storage accBorrow = activeBorrows[borrower][marketId][collateralIndex];
 
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
 
