@@ -7,7 +7,6 @@ import "../IOPBorrowing.sol";
 import "./MockLPool.sol";
 
 contract MockController is ControllerInterface {
-
     bool public suspend;
     IOPBorrowing public borrowing;
     uint16 private _marketId;
@@ -25,7 +24,12 @@ contract MockController is ControllerInterface {
         suspend = _suspend;
     }
 
-    function createLPoolPair(address tokenA, address tokenB, uint16 marginLimit, bytes memory dexData) external {
+    function createLPoolPair(
+        address tokenA,
+        address tokenB,
+        uint16 marginLimit,
+        bytes memory dexData
+    ) external {
         marginLimit;
         MockLPool pool0 = new MockLPool(tokenA, borrowRateOfPerBlock);
         MockLPool pool1 = new MockLPool(tokenB, borrowRateOfPerBlock);
@@ -34,26 +38,60 @@ contract MockController is ControllerInterface {
         _marketId++;
     }
 
-    function collBorrowAllowed(uint marketId, address borrower, bool collateralIndex) external override onlyOpBorrowingNotSuspended(marketId) view returns (bool) {
+    function collBorrowAllowed(
+        uint marketId,
+        address borrower,
+        bool collateralIndex
+    )
+        external
+        view
+        override
+        onlyOpBorrowingNotSuspended(marketId)
+        returns (bool)
+    {
         borrower;
         collateralIndex;
         return true;
     }
 
-    function collRepayAllowed(uint marketId) external override onlyOpBorrowingNotSuspended(marketId) view returns (bool)  {
+    function collRepayAllowed(
+        uint marketId
+    )
+        external
+        view
+        override
+        onlyOpBorrowingNotSuspended(marketId)
+        returns (bool)
+    {
         return true;
     }
 
-    function collRedeemAllowed(uint marketId) external override onlyOpBorrowingNotSuspended(marketId) view returns (bool)  {
+    function collRedeemAllowed(
+        uint marketId
+    )
+        external
+        view
+        override
+        onlyOpBorrowingNotSuspended(marketId)
+        returns (bool)
+    {
         return true;
     }
 
-    function collLiquidateAllowed(uint marketId) external override onlyOpBorrowingNotSuspended(marketId) view returns (bool)  {
+    function collLiquidateAllowed(
+        uint marketId
+    )
+        external
+        view
+        override
+        onlyOpBorrowingNotSuspended(marketId)
+        returns (bool)
+    {
         return true;
     }
 
     modifier onlyOpBorrowingNotSuspended(uint marketId) {
-        require(!suspend, 'Suspended borrowing');
+        require(!suspend, "Suspended borrowing");
         _;
     }
 }

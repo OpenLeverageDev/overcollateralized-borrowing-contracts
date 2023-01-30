@@ -9,7 +9,14 @@ contract MockOpenLev is OpenLevInterface {
     mapping(uint16 => Market) private _markets;
     mapping(uint16 => uint32[]) private dexs;
 
-    function setMarket(uint16 marketId, address pool0, address pool1, address token0, address token1, uint32[] memory _dexs) external {
+    function setMarket(
+        uint16 marketId,
+        address pool0,
+        address pool1,
+        address token0,
+        address token1,
+        uint32[] memory _dexs
+    ) external {
         Market memory market;
         market.pool0 = pool0;
         market.pool1 = pool1;
@@ -19,7 +26,9 @@ contract MockOpenLev is OpenLevInterface {
         _markets[marketId] = market;
     }
 
-    function markets(uint16 marketId) external view override returns (Market memory){
+    function markets(
+        uint16 marketId
+    ) external view override returns (Market memory) {
         return _markets[marketId];
     }
 
@@ -27,12 +36,18 @@ contract MockOpenLev is OpenLevInterface {
         _taxes[token][index] = tax * 10000;
     }
 
-    function taxes(uint16 marketId, address token, uint index) external view override returns (uint24){
+    function taxes(
+        uint16 marketId,
+        address token,
+        uint index
+    ) external view override returns (uint24) {
         marketId;
         return _taxes[token][index];
     }
 
-    function getMarketSupportDexs(uint16 marketId) external view override returns (uint32[] memory){
+    function getMarketSupportDexs(
+        uint16 marketId
+    ) external view override returns (uint32[] memory) {
         return dexs[marketId];
     }
 }

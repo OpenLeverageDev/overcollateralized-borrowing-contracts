@@ -17,9 +17,17 @@ interface OpenLevInterface {
         uint256 pool1Insurance; // Insurance balance for token 1
     }
 
-    function markets(uint16 marketId) external view returns (Market memory market);
+    function markets(
+        uint16 marketId
+    ) external view returns (Market memory market);
 
-    function taxes(uint16 marketId, address token, uint index) external view returns (uint24);
+    function taxes(
+        uint16 marketId,
+        address token,
+        uint index
+    ) external view returns (uint24);
 
-    function getMarketSupportDexs(uint16 marketId) external view returns (uint32[] memory);
+    function getMarketSupportDexs(
+        uint16 marketId
+    ) external view returns (uint32[] memory);
 }
