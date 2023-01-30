@@ -15,8 +15,5 @@ interface LPoolInterface {
 
     function repayBorrowBehalf(address borrower, uint repayAmount) external;
 
-    function repayBorrowEndByOpenLev(
-        address borrower,
-        uint repayAmount
-    ) external;
+    function repayBorrowEndByOpenLev(address borrower, uint repayAmount) external;
 }

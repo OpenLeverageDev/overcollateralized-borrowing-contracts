@@ -12,13 +12,7 @@ import "./libraries/Utils.sol";
 
 import "./OPBorrowingLib.sol";
 
-contract OPBorrowing is
-    DelegateInterface,
-    Adminable,
-    ReentrancyGuard,
-    IOPBorrowing,
-    OPBorrowingStorage
-{
+contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrowing, OPBorrowingStorage {
     using TransferHelper for IERC20;
     using DexData for bytes;
 
@@ -54,14 +48,7 @@ contract OPBorrowing is
         bytes memory dexData
     ) external override {
         require(msg.sender == address(controller), "NCN");
-        addMarketInternal(
-            marketId,
-            pool0,
-            pool1,
-            pool0.underlying(),
-            pool1.underlying(),
-            dexData
-        );
+        addMarketInternal(marketId, pool0, pool1, pool0.underlying(), pool1.underlying(), dexData);
     }
 
     struct BorrowVars {
@@ -96,12 +83,7 @@ contract OPBorrowing is
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
 
         MarketConf storage marketConf = marketsConf[marketId];
-        collateral = OPBorrowingLib.transferIn(
-            borrower,
-            IERC20(borrowVars.collateralToken),
-            wETH,
-            collateral
-        );
+        collateral = OPBorrowingLib.transferIn(borrower, IERC20(borrowVars.collateralToken), wETH, collateral);
 
         if (collateral > 0) {
             // amount to share
@@ -110,11 +92,7 @@ contract OPBorrowing is
                 borrowVars.collateralTotalShare,
                 borrowVars.collateralTotalReserve
             );
-            increaseCollateralShare(
-                accBorrow,
-                borrowVars.collateralToken,
-                collateral
-            );
+            increaseCollateralShare(accBorrow, borrowVars.collateralToken, collateral);
         }
         require(collateral > 0 || borrowing > 0, "CB0");
         uint fees = 0;
@@ -136,38 +114,27 @@ contract OPBorrowing is
             uint borrowTWALiquidity = collateralIndex
                 ? twaLiquidity[marketId].token0Liq
                 : twaLiquidity[marketId].token1Liq;
-            bytes memory dexData = OPBorrowingLib.uint32ToBytes(
-                markets[marketId].dex
-            );
+            bytes memory dexData = OPBorrowingLib.uint32ToBytes(markets[marketId].dex);
             uint borrowLiquidity = dexAgg.getToken0Liquidity(
                 borrowVars.borrowToken,
                 borrowVars.collateralToken,
                 dexData
             );
-            uint minLiquidity = Utils.minOf(
-                borrowTWALiquidity,
-                borrowLiquidity
-            );
+            uint minLiquidity = Utils.minOf(borrowTWALiquidity, borrowLiquidity);
             require(
-                (minLiquidity * marketConf.maxLiquidityRatio) /
-                    RATIO_DENOMINATOR >=
+                (minLiquidity * marketConf.maxLiquidityRatio) / RATIO_DENOMINATOR >=
                     borrowVars.borrowPool.totalBorrows(),
                 "BGL"
             );
             // check healthy
-            uint accountTotalBorrowed = OPBorrowingLib.borrowStored(
-                borrowVars.borrowPool,
-                borrower
-            );
+            uint accountTotalBorrowed = OPBorrowingLib.borrowStored(borrowVars.borrowPool, borrower);
             require(
                 checkHealthy(
                     marketId,
                     OPBorrowingLib.shareToAmount(
                         accBorrow.collateral,
                         totalShares[borrowVars.collateralToken],
-                        OPBorrowingLib.balanceOf(
-                            IERC20(borrowVars.collateralToken)
-                        )
+                        OPBorrowingLib.balanceOf(IERC20(borrowVars.collateralToken))
                     ),
                     accountTotalBorrowed,
                     borrowVars.collateralToken,
@@ -186,22 +153,10 @@ contract OPBorrowing is
                 borrowVars.borrowTotalShare
             );
             // transfer out borrowed - fees
-            OPBorrowingLib.doTransferOut(
-                borrower,
-                IERC20(borrowVars.borrowToken),
-                wETH,
-                borrowed - fees
-            );
+            OPBorrowingLib.doTransferOut(borrower, IERC20(borrowVars.borrowToken), wETH, borrowed - fees);
         }
 
-        emit CollBorrow(
-            borrower,
-            marketId,
-            collateralIndex,
-            collateral,
-            borrowing,
-            fees
-        );
+        emit CollBorrow(borrower, marketId, collateralIndex, collateral, borrowing, fees);
     }
 
     /// @notice Sender repay borrowings and redeem collateral token
@@ -222,9 +177,7 @@ contract OPBorrowing is
         // update borrower last block number
         updateBorrowerBlockNum(borrower, marketId, collateralIndex);
         // check collateral
-        Borrow storage accBorrow = activeBorrows[borrower][marketId][
-            collateralIndex
-        ];
+        Borrow storage accBorrow = activeBorrows[borrower][marketId][collateralIndex];
         checkCollateral(accBorrow);
 
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
@@ -234,30 +187,18 @@ contract OPBorrowing is
         if (repayAmount == type(uint256).max) {
             repayAmount = borrowPrior;
         }
-        repayAmount = OPBorrowingLib.transferIn(
-            borrower,
-            IERC20(borrowVars.borrowToken),
-            wETH,
-            repayAmount
-        );
+        repayAmount = OPBorrowingLib.transferIn(borrower, IERC20(borrowVars.borrowToken), wETH, repayAmount);
         require(repayAmount > 0, "RL0");
         // repay
         OPBorrowingLib.repay(borrowVars.borrowPool, borrower, repayAmount);
-        uint borrowAfterRepay = OPBorrowingLib.borrowStored(
-            borrowVars.borrowPool,
-            borrower
-        );
+        uint borrowAfterRepay = OPBorrowingLib.borrowStored(borrowVars.borrowPool, borrower);
         // in the tax token case, should get actual repayment amount
         repayAmount = borrowPrior - borrowAfterRepay;
         uint redeemShare;
         // borrowing is 0, so return all collateral
         if (borrowAfterRepay == 0) {
             redeemShare = accBorrow.collateral;
-            decreaseCollateralShare(
-                accBorrow,
-                borrowVars.collateralToken,
-                redeemShare
-            );
+            decreaseCollateralShare(accBorrow, borrowVars.collateralToken, redeemShare);
             OPBorrowingLib.doTransferOut(
                 borrower,
                 IERC20(borrowVars.collateralToken),
@@ -272,27 +213,12 @@ contract OPBorrowing is
         // redeem collateral= borrower.collateral * repayRatio
         else if (isRedeem) {
             uint repayRatio = (repayAmount * RATIO_DENOMINATOR) / borrowPrior;
-            redeemShare =
-                (accBorrow.collateral * repayRatio) /
-                RATIO_DENOMINATOR;
+            redeemShare = (accBorrow.collateral * repayRatio) / RATIO_DENOMINATOR;
             if (redeemShare > 0) {
-                redeemInternal(
-                    borrower,
-                    marketId,
-                    collateralIndex,
-                    redeemShare,
-                    borrowAfterRepay,
-                    borrowVars
-                );
+                redeemInternal(borrower, marketId, collateralIndex, redeemShare, borrowAfterRepay, borrowVars);
             }
         }
-        emit CollRepay(
-            borrower,
-            marketId,
-            collateralIndex,
-            repayAmount,
-            redeemShare
-        );
+        emit CollRepay(borrower, marketId, collateralIndex, repayAmount, redeemShare);
     }
 
     /// @notice Sender redeem collateral token
@@ -300,11 +226,7 @@ contract OPBorrowing is
     /// @param marketId The market id
     /// @param collateral The collateral index (false means token0)
     /// @param collateral The collateral share to redeem
-    function redeem(
-        uint16 marketId,
-        bool collateralIndex,
-        uint collateral
-    ) external override nonReentrant {
+    function redeem(uint16 marketId, bool collateralIndex, uint collateral) external override nonReentrant {
         address borrower = msg.sender;
         controller.collRedeemAllowed(marketId);
         // update borrower last block number
@@ -314,14 +236,7 @@ contract OPBorrowing is
 
         uint borrowPrior = borrowVars.borrowPool.borrowBalanceCurrent(borrower);
 
-        redeemInternal(
-            borrower,
-            marketId,
-            collateralIndex,
-            collateral,
-            borrowPrior,
-            borrowVars
-        );
+        redeemInternal(borrower, marketId, collateralIndex, collateral, borrowPrior, borrowVars);
 
         emit CollRedeem(borrower, marketId, collateralIndex, collateral);
     }
@@ -348,25 +263,17 @@ contract OPBorrowing is
     /// @param marketId The market id
     /// @param collateralIndex The collateral index (false means token0)
     /// @param borrower The borrower address
-    function liquidate(
-        uint16 marketId,
-        bool collateralIndex,
-        address borrower
-    ) external override nonReentrant {
+    function liquidate(uint16 marketId, bool collateralIndex, address borrower) external override nonReentrant {
         controller.collLiquidateAllowed(marketId);
         // update borrower last block number
         updateBorrowerBlockNum(borrower, marketId, collateralIndex);
         // check collateral
-        Borrow storage accBorrow = activeBorrows[borrower][marketId][
-            collateralIndex
-        ];
+        Borrow storage accBorrow = activeBorrows[borrower][marketId][collateralIndex];
         checkCollateral(accBorrow);
 
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
         LiquidateVars memory liquidateVars;
-        liquidateVars.borrowing = borrowVars.borrowPool.borrowBalanceCurrent(
-            borrower
-        );
+        liquidateVars.borrowing = borrowVars.borrowPool.borrowBalanceCurrent(borrower);
         liquidateVars.collateralAmount = OPBorrowingLib.shareToAmount(
             accBorrow.collateral,
             borrowVars.collateralTotalShare,
@@ -385,17 +292,12 @@ contract OPBorrowing is
             "BIH"
         );
         // check msg.sender xOLE
-        require(
-            xOLE.balanceOf(msg.sender) >= liquidationConf.liquidatorXOLEHeld,
-            "XNE"
-        );
+        require(xOLE.balanceOf(msg.sender) >= liquidationConf.liquidatorXOLEHeld, "XNE");
         // compute liquidation collateral
         MarketConf storage marketConf = marketsConf[marketId];
         liquidateVars.liquidationAmount = liquidateVars.collateralAmount;
         liquidateVars.liquidationShare = accBorrow.collateral;
-        liquidateVars.dexData = OPBorrowingLib.uint32ToBytes(
-            markets[marketId].dex
-        );
+        liquidateVars.dexData = OPBorrowingLib.uint32ToBytes(markets[marketId].dex);
         // liquidationAmount = collateralAmount/2 when the collateralAmount >= liquidity * liquidateMaxLiquidityRatio
         {
             uint collateralLiquidity = dexAgg.getToken0Liquidity(
@@ -403,12 +305,9 @@ contract OPBorrowing is
                 borrowVars.borrowToken,
                 liquidateVars.dexData
             );
-            uint maxLiquidity = (collateralLiquidity *
-                marketConf.liquidateMaxLiquidityRatio) / RATIO_DENOMINATOR;
+            uint maxLiquidity = (collateralLiquidity * marketConf.liquidateMaxLiquidityRatio) / RATIO_DENOMINATOR;
             if (liquidateVars.liquidationAmount >= maxLiquidity) {
-                liquidateVars.liquidationShare =
-                    liquidateVars.liquidationShare /
-                    2;
+                liquidateVars.liquidationShare = liquidateVars.liquidationShare / 2;
                 liquidateVars.liquidationAmount = OPBorrowingLib.shareToAmount(
                     liquidateVars.liquidationShare,
                     borrowVars.collateralTotalShare,
@@ -424,26 +323,11 @@ contract OPBorrowing is
         );
         // compute sell collateral amount, borrowings + liquidationFees + tax
         {
-            uint24 borrowTokenTransTax = openLev.taxes(
-                marketId,
-                borrowVars.borrowToken,
-                0
-            );
-            uint24 borrowTokenBuyTax = openLev.taxes(
-                marketId,
-                borrowVars.borrowToken,
-                2
-            );
-            uint24 collateralSellTax = openLev.taxes(
-                marketId,
-                borrowVars.collateralToken,
-                1
-            );
+            uint24 borrowTokenTransTax = openLev.taxes(marketId, borrowVars.borrowToken, 0);
+            uint24 borrowTokenBuyTax = openLev.taxes(marketId, borrowVars.borrowToken, 2);
+            uint24 collateralSellTax = openLev.taxes(marketId, borrowVars.collateralToken, 1);
 
-            liquidateVars.repayAmount = Utils.toAmountBeforeTax(
-                liquidateVars.borrowing,
-                borrowTokenTransTax
-            );
+            liquidateVars.repayAmount = Utils.toAmountBeforeTax(liquidateVars.borrowing, borrowTokenTransTax);
             liquidateVars.liquidationFees =
                 (liquidateVars.borrowing * marketConf.liquidateFeesRatio) /
                 RATIO_DENOMINATOR;
@@ -471,31 +355,16 @@ contract OPBorrowing is
         if (liquidateVars.buySuccess) {
             uint sellAmount = borrowVars.collateralTotalReserve -
                 OPBorrowingLib.balanceOf(IERC20(borrowVars.collateralToken));
-            liquidateVars.collateralToBorrower =
-                liquidateVars.collateralAmount -
-                sellAmount;
+            liquidateVars.collateralToBorrower = liquidateVars.collateralAmount - sellAmount;
             liquidateVars.buyAmount =
                 OPBorrowingLib.balanceOf(IERC20(borrowVars.borrowToken)) -
                 borrowVars.borrowTotalReserve;
-            require(
-                liquidateVars.buyAmount >= liquidateVars.repayAmount,
-                "BLR"
-            );
-            OPBorrowingLib.repay(
-                borrowVars.borrowPool,
-                borrower,
-                liquidateVars.repayAmount
-            );
+            require(liquidateVars.buyAmount >= liquidateVars.repayAmount, "BLR");
+            OPBorrowingLib.repay(borrowVars.borrowPool, borrower, liquidateVars.repayAmount);
             // check borrowing is 0
-            require(
-                OPBorrowingLib.borrowStored(borrowVars.borrowPool, borrower) ==
-                    0,
-                "BG0"
-            );
+            require(OPBorrowingLib.borrowStored(borrowVars.borrowPool, borrower) == 0, "BG0");
             unchecked {
-                liquidateVars.liquidationFees =
-                    liquidateVars.buyAmount -
-                    liquidateVars.repayAmount;
+                liquidateVars.liquidationFees = liquidateVars.buyAmount - liquidateVars.repayAmount;
             }
             liquidateVars.liquidationShare = accBorrow.collateral;
         }
@@ -515,21 +384,9 @@ contract OPBorrowing is
                 (liquidateVars.buyAmount * marketConf.liquidateFeesRatio) /
                 RATIO_DENOMINATOR;
             if (liquidateVars.isPartialLiquidate) {
-                liquidateVars.repayAmount =
-                    liquidateVars.buyAmount -
-                    liquidateVars.liquidationFees;
-                OPBorrowingLib.repay(
-                    borrowVars.borrowPool,
-                    borrower,
-                    liquidateVars.repayAmount
-                );
-                require(
-                    OPBorrowingLib.borrowStored(
-                        borrowVars.borrowPool,
-                        borrower
-                    ) != 0,
-                    "BE0"
-                );
+                liquidateVars.repayAmount = liquidateVars.buyAmount - liquidateVars.liquidationFees;
+                OPBorrowingLib.repay(borrowVars.borrowPool, borrower, liquidateVars.repayAmount);
+                require(OPBorrowingLib.borrowStored(borrowVars.borrowPool, borrower) != 0, "BE0");
             } else {
                 uint insuranceShare = collateralIndex
                     ? insurances[marketId].insurance0
@@ -544,11 +401,7 @@ contract OPBorrowing is
                     liquidateVars.buyAmount;
                 uint insuranceDecrease;
                 if (insuranceAmount >= diffRepayAmount) {
-                    OPBorrowingLib.repay(
-                        borrowVars.borrowPool,
-                        borrower,
-                        liquidateVars.repayAmount
-                    );
+                    OPBorrowingLib.repay(borrowVars.borrowPool, borrower, liquidateVars.repayAmount);
                     insuranceDecrease = OPBorrowingLib.amountToShare(
                         diffRepayAmount,
                         borrowVars.borrowTotalShare,
@@ -559,13 +412,8 @@ contract OPBorrowing is
                         liquidateVars.buyAmount +
                         insuranceAmount -
                         liquidateVars.liquidationFees;
-                    borrowVars.borrowPool.repayBorrowEndByOpenLev(
-                        borrower,
-                        liquidateVars.repayAmount
-                    );
-                    liquidateVars.outstandingAmount =
-                        diffRepayAmount -
-                        insuranceAmount;
+                    borrowVars.borrowPool.repayBorrowEndByOpenLev(borrower, liquidateVars.repayAmount);
+                    liquidateVars.outstandingAmount = diffRepayAmount - insuranceAmount;
                     insuranceDecrease = insuranceShare;
                 }
                 decreaseInsuranceShare(
@@ -586,11 +434,7 @@ contract OPBorrowing is
             borrowVars.borrowTotalReserve,
             borrowVars.borrowTotalShare
         );
-        decreaseCollateralShare(
-            accBorrow,
-            borrowVars.collateralToken,
-            liquidateVars.liquidationShare
-        );
+        decreaseCollateralShare(accBorrow, borrowVars.collateralToken, liquidateVars.liquidationShare);
         // transfer remaining collateral to borrower
         if (liquidateVars.collateralToBorrower > 0) {
             OPBorrowingLib.doTransferOut(
@@ -627,9 +471,7 @@ contract OPBorrowing is
     ) external view override returns (uint) {
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
         uint borrowed = borrowVars.borrowPool.borrowBalanceCurrent(borrower);
-        Borrow storage accBorrow = activeBorrows[borrower][marketId][
-            collateralIndex
-        ];
+        Borrow storage accBorrow = activeBorrows[borrower][marketId][collateralIndex];
         uint collateral = accBorrow.collateral;
         if (borrowed == 0 || collateral == 0) {
             return 100 * RATIO_DENOMINATOR;
@@ -640,17 +482,9 @@ contract OPBorrowing is
             borrowVars.collateralTotalReserve
         );
         MarketConf storage marketConf = marketsConf[marketId];
-        bytes memory dexData = OPBorrowingLib.uint32ToBytes(
-            markets[marketId].dex
-        );
-        (uint price, uint8 decimals) = dexAgg.getPrice(
-            borrowVars.collateralToken,
-            borrowVars.borrowToken,
-            dexData
-        );
-        return
-            (((collateralAmount * price) / (10 ** uint(decimals))) *
-                marketConf.collateralRatio) / borrowed;
+        bytes memory dexData = OPBorrowingLib.uint32ToBytes(markets[marketId].dex);
+        (uint price, uint8 decimals) = dexAgg.getPrice(borrowVars.collateralToken, borrowVars.borrowToken, dexData);
+        return (((collateralAmount * price) / (10 ** uint(decimals))) * marketConf.collateralRatio) / borrowed;
     }
 
     /*** Admin Functions ***/
@@ -658,10 +492,7 @@ contract OPBorrowing is
     /// @notice Admin migrate markets from openLev contract
     /// @param from The from market id
     /// @param to The to market id
-    function migrateOpenLevMarkets(
-        uint16 from,
-        uint16 to
-    ) external override onlyAdmin {
+    function migrateOpenLevMarkets(uint16 from, uint16 to) external override onlyAdmin {
         for (uint16 i = from; i <= to; i++) {
             OpenLevInterface.Market memory market = openLev.markets(i);
             addMarketInternal(
@@ -682,17 +513,11 @@ contract OPBorrowing is
         require(marketIds.length == liquidity.length, "IIL");
         for (uint i = 0; i < marketIds.length; i++) {
             uint16 marketId = marketIds[i];
-            setTwaLiquidityInternal(
-                marketId,
-                liquidity[i].token0Liq,
-                liquidity[i].token1Liq
-            );
+            setTwaLiquidityInternal(marketId, liquidity[i].token0Liq, liquidity[i].token1Liq);
         }
     }
 
-    function setMarketDefConf(
-        OPBorrowingStorage.MarketConf calldata _marketConf
-    ) external override onlyAdmin {
+    function setMarketDefConf(OPBorrowingStorage.MarketConf calldata _marketConf) external override onlyAdmin {
         marketDefConf = _marketConf;
     }
 
@@ -728,30 +553,14 @@ contract OPBorrowing is
     /// @param tokenIndex The token index (false means token0)
     /// @param to The address of insurance to transfer
     /// @param moveShare The insurance share to move
-    function moveInsurance(
-        uint16 marketId,
-        bool tokenIndex,
-        address to,
-        uint moveShare
-    ) external override onlyAdmin {
-        address token = !tokenIndex
-            ? markets[marketId].token0
-            : markets[marketId].token1;
+    function moveInsurance(uint16 marketId, bool tokenIndex, address to, uint moveShare) external override onlyAdmin {
+        address token = !tokenIndex ? markets[marketId].token0 : markets[marketId].token1;
         uint256 totalShare = totalShares[token];
-        decreaseInsuranceShare(
-            insurances[marketId],
-            tokenIndex,
-            token,
-            moveShare
-        );
+        decreaseInsuranceShare(insurances[marketId], tokenIndex, token, moveShare);
         OPBorrowingLib.safeTransfer(
             IERC20(token),
             to,
-            OPBorrowingLib.shareToAmount(
-                moveShare,
-                totalShare,
-                OPBorrowingLib.balanceOf(IERC20(token))
-            )
+            OPBorrowingLib.shareToAmount(moveShare, totalShare, OPBorrowingLib.balanceOf(IERC20(token)))
         );
     }
 
@@ -763,15 +572,9 @@ contract OPBorrowing is
         uint borrowing,
         BorrowVars memory borrowVars
     ) internal {
-        Borrow storage accBorrow = activeBorrows[borrower][marketId][
-            collateralIndex
-        ];
+        Borrow storage accBorrow = activeBorrows[borrower][marketId][collateralIndex];
         require(accBorrow.collateral >= redeemShare, "RGC");
-        decreaseCollateralShare(
-            accBorrow,
-            borrowVars.collateralToken,
-            redeemShare
-        );
+        decreaseCollateralShare(accBorrow, borrowVars.collateralToken, redeemShare);
         // redeem
         OPBorrowingLib.doTransferOut(
             borrower,
@@ -801,20 +604,12 @@ contract OPBorrowing is
         );
     }
 
-    function increaseCollateralShare(
-        Borrow storage accBorrow,
-        address token,
-        uint increaseShare
-    ) internal {
+    function increaseCollateralShare(Borrow storage accBorrow, address token, uint increaseShare) internal {
         accBorrow.collateral += increaseShare;
         totalShares[token] += increaseShare;
     }
 
-    function decreaseCollateralShare(
-        Borrow storage accBorrow,
-        address token,
-        uint decreaseShare
-    ) internal {
+    function decreaseCollateralShare(Borrow storage accBorrow, address token, uint decreaseShare) internal {
         accBorrow.collateral -= decreaseShare;
         totalShares[token] -= decreaseShare;
     }
@@ -847,14 +642,8 @@ contract OPBorrowing is
         totalShares[token] -= decreaseShare;
     }
 
-    function updateBorrowerBlockNum(
-        address borrower,
-        uint16 marketId,
-        bool collateralIndex
-    ) internal {
-        Borrow storage accBorrow = activeBorrows[borrower][marketId][
-            collateralIndex
-        ];
+    function updateBorrowerBlockNum(address borrower, uint16 marketId, bool collateralIndex) internal {
+        Borrow storage accBorrow = activeBorrows[borrower][marketId][collateralIndex];
         uint blockNum = block.number;
         require(blockNum != accBorrow.lastBlockNum, "SBN");
         accBorrow.lastBlockNum = uint128(blockNum);
@@ -876,37 +665,18 @@ contract OPBorrowing is
         MarketConf storage marketConf = marketsConf[marketId];
         uint fees = (borrowed * marketConf.borrowFeesRatio) / RATIO_DENOMINATOR;
         if (fees > 0) {
-            uint poolReturns = (fees * marketConf.poolReturnsRatio) /
-                RATIO_DENOMINATOR;
+            uint poolReturns = (fees * marketConf.poolReturnsRatio) / RATIO_DENOMINATOR;
             if (poolReturns > 0) {
-                OPBorrowingLib.safeTransfer(
-                    IERC20(borrowToken),
-                    address(borrowPool),
-                    poolReturns
-                );
+                OPBorrowingLib.safeTransfer(IERC20(borrowToken), address(borrowPool), poolReturns);
             }
-            uint insurance = (fees * marketConf.insuranceRatio) /
-                RATIO_DENOMINATOR;
+            uint insurance = (fees * marketConf.insuranceRatio) / RATIO_DENOMINATOR;
             if (insurance > 0) {
-                uint increaseInsurance = OPBorrowingLib.amountToShare(
-                    insurance,
-                    borrowTotalShare,
-                    borrowTotalReserve
-                );
-                increaseInsuranceShare(
-                    insurances[marketId],
-                    !collateralIndex,
-                    borrowToken,
-                    increaseInsurance
-                );
+                uint increaseInsurance = OPBorrowingLib.amountToShare(insurance, borrowTotalShare, borrowTotalReserve);
+                increaseInsuranceShare(insurances[marketId], !collateralIndex, borrowToken, increaseInsurance);
             }
             uint xoleAmount = fees - poolReturns - insurance;
             if (xoleAmount > 0) {
-                OPBorrowingLib.safeTransfer(
-                    IERC20(borrowToken),
-                    address(xOLE),
-                    xoleAmount
-                );
+                OPBorrowingLib.safeTransfer(IERC20(borrowToken), address(xOLE), xoleAmount);
             }
         }
         return fees;
@@ -923,55 +693,24 @@ contract OPBorrowing is
     ) internal returns (bool buyBackSuccess) {
         if (liquidationFees > 0) {
             MarketConf storage marketConf = marketsConf[marketId];
-            uint poolReturns = (liquidationFees *
-                marketConf.liquidatePoolReturnsRatio) / RATIO_DENOMINATOR;
+            uint poolReturns = (liquidationFees * marketConf.liquidatePoolReturnsRatio) / RATIO_DENOMINATOR;
             if (poolReturns > 0) {
-                OPBorrowingLib.safeTransfer(
-                    IERC20(borrowToken),
-                    address(borrowPool),
-                    poolReturns
-                );
+                OPBorrowingLib.safeTransfer(IERC20(borrowToken), address(borrowPool), poolReturns);
             }
-            uint insurance = (liquidationFees *
-                marketConf.liquidateInsuranceRatio) / RATIO_DENOMINATOR;
+            uint insurance = (liquidationFees * marketConf.liquidateInsuranceRatio) / RATIO_DENOMINATOR;
             if (insurance > 0) {
-                uint increaseInsurance = OPBorrowingLib.amountToShare(
-                    insurance,
-                    borrowTotalShare,
-                    borrowTotalReserve
-                );
-                increaseInsuranceShare(
-                    insurances[marketId],
-                    !collateralIndex,
-                    borrowToken,
-                    increaseInsurance
-                );
+                uint increaseInsurance = OPBorrowingLib.amountToShare(insurance, borrowTotalShare, borrowTotalReserve);
+                increaseInsuranceShare(insurances[marketId], !collateralIndex, borrowToken, increaseInsurance);
             }
-            uint liquidatorReturns = (liquidationFees *
-                marketConf.liquidatorReturnsRatio) / RATIO_DENOMINATOR;
+            uint liquidatorReturns = (liquidationFees * marketConf.liquidatorReturnsRatio) / RATIO_DENOMINATOR;
             if (liquidatorReturns > 0) {
-                OPBorrowingLib.safeTransfer(
-                    IERC20(borrowToken),
-                    msg.sender,
-                    liquidatorReturns
-                );
+                OPBorrowingLib.safeTransfer(IERC20(borrowToken), msg.sender, liquidatorReturns);
             }
-            uint buyBackAmount = liquidationFees -
-                poolReturns -
-                insurance -
-                liquidatorReturns;
+            uint buyBackAmount = liquidationFees - poolReturns - insurance - liquidatorReturns;
             if (buyBackAmount > 0) {
-                OPBorrowingLib.safeApprove(
-                    IERC20(borrowToken),
-                    address(liquidationConf.buyBack),
-                    buyBackAmount
-                );
+                OPBorrowingLib.safeApprove(IERC20(borrowToken), address(liquidationConf.buyBack), buyBackAmount);
                 (buyBackSuccess, ) = address(liquidationConf.buyBack).call(
-                    abi.encodeWithSelector(
-                        liquidationConf.buyBack.transferIn.selector,
-                        borrowToken,
-                        buyBackAmount
-                    )
+                    abi.encodeWithSelector(liquidationConf.buyBack.transferIn.selector, borrowToken, buyBackAmount)
                 );
             }
         }
@@ -994,28 +733,17 @@ contract OPBorrowing is
         uint collateralPrice;
         uint denominator;
         {
-            (
-                uint price,
-                uint cAvgPrice,
-                uint hAvgPrice,
-                uint8 decimals,
-
-            ) = updatePrices(
-                    collateralToken,
-                    borrowToken,
-                    marketConf.twapDuration,
-                    dex
-                );
-            collateralPrice = Utils.minOf(
-                Utils.minOf(price, cAvgPrice),
-                hAvgPrice
+            (uint price, uint cAvgPrice, uint hAvgPrice, uint8 decimals, ) = updatePrices(
+                collateralToken,
+                borrowToken,
+                marketConf.twapDuration,
+                dex
             );
+            collateralPrice = Utils.minOf(Utils.minOf(price, cAvgPrice), hAvgPrice);
             denominator = (10 ** uint(decimals));
         }
         return
-            (((collateral * collateralPrice) / denominator) *
-                marketConf.collateralRatio) /
-                RATIO_DENOMINATOR >=
+            (((collateral * collateralPrice) / denominator) * marketConf.collateralRatio) / RATIO_DENOMINATOR >=
             borrowed;
     }
 
@@ -1036,36 +764,22 @@ contract OPBorrowing is
         uint collateralPrice;
         uint denominator;
         {
-            (
-                uint price,
-                uint cAvgPrice,
-                uint hAvgPrice,
-                uint8 decimals,
-
-            ) = updatePrices(
-                    collateralToken,
-                    borrowToken,
-                    marketConf.twapDuration,
-                    dex
-                );
+            (uint price, uint cAvgPrice, uint hAvgPrice, uint8 decimals, ) = updatePrices(
+                collateralToken,
+                borrowToken,
+                marketConf.twapDuration,
+                dex
+            );
             // avoids flash loan
             if (price < cAvgPrice && price != 0) {
                 uint diffPriceRatio = (cAvgPrice * 100) / price;
-                require(
-                    diffPriceRatio - 100 <= liquidationConf.priceDiffRatio,
-                    "MPT"
-                );
+                require(diffPriceRatio - 100 <= liquidationConf.priceDiffRatio, "MPT");
             }
-            collateralPrice = Utils.maxOf(
-                Utils.maxOf(price, cAvgPrice),
-                hAvgPrice
-            );
+            collateralPrice = Utils.maxOf(Utils.maxOf(price, cAvgPrice), hAvgPrice);
             denominator = (10 ** uint(decimals));
         }
         return
-            (((collateral * collateralPrice) / denominator) *
-                marketConf.collateralRatio) /
-                RATIO_DENOMINATOR <
+            (((collateral * collateralPrice) / denominator) * marketConf.collateralRatio) / RATIO_DENOMINATOR <
             borrowed;
     }
 
@@ -1074,32 +788,17 @@ contract OPBorrowing is
         address borrowToken,
         uint16 twapDuration,
         uint32 dex
-    )
-        internal
-        returns (
-            uint price,
-            uint cAvgPrice,
-            uint hAvgPrice,
-            uint8 decimals,
-            uint timestamp
-        )
-    {
+    ) internal returns (uint price, uint cAvgPrice, uint hAvgPrice, uint8 decimals, uint timestamp) {
         bytes memory dexData = OPBorrowingLib.uint32ToBytes(dex);
         if (dexData.isUniV2Class()) {
-            dexAgg.updatePriceOracle(
-                collateralToken,
-                borrowToken,
-                twapDuration,
-                dexData
-            );
+            dexAgg.updatePriceOracle(collateralToken, borrowToken, twapDuration, dexData);
         }
-        (price, cAvgPrice, hAvgPrice, decimals, timestamp) = dexAgg
-            .getPriceCAvgPriceHAvgPrice(
-                collateralToken,
-                borrowToken,
-                twapDuration,
-                dexData
-            );
+        (price, cAvgPrice, hAvgPrice, decimals, timestamp) = dexAgg.getPriceCAvgPriceHAvgPrice(
+            collateralToken,
+            borrowToken,
+            twapDuration,
+            dexData
+        );
     }
 
     function addMarketInternal(
@@ -1111,85 +810,33 @@ contract OPBorrowing is
         bytes memory dexData
     ) internal {
         // init market info
-        markets[marketId] = Market(
-            pool0,
-            pool1,
-            token0,
-            token1,
-            dexData.toDexDetail()
-        );
+        markets[marketId] = Market(pool0, pool1, token0, token1, dexData.toDexDetail());
         // init default config
         marketsConf[marketId] = marketDefConf;
         // init liquidity
-        (uint token0Liq, uint token1Liq) = dexAgg.getPairLiquidity(
-            token0,
-            token1,
-            dexData
-        );
+        (uint token0Liq, uint token1Liq) = dexAgg.getPairLiquidity(token0, token1, dexData);
         setTwaLiquidityInternal(marketId, token0Liq, token1Liq);
         // approve the max number for pools
-        OPBorrowingLib.safeApprove(
-            IERC20(token0),
-            address(pool0),
-            type(uint256).max
-        );
-        OPBorrowingLib.safeApprove(
-            IERC20(token1),
-            address(pool1),
-            type(uint256).max
-        );
-        emit NewMarket(
-            marketId,
-            pool0,
-            pool1,
-            token0,
-            token1,
-            dexData.toDexDetail(),
-            token0Liq,
-            token1Liq
-        );
+        OPBorrowingLib.safeApprove(IERC20(token0), address(pool0), type(uint256).max);
+        OPBorrowingLib.safeApprove(IERC20(token1), address(pool1), type(uint256).max);
+        emit NewMarket(marketId, pool0, pool1, token0, token1, dexData.toDexDetail(), token0Liq, token1Liq);
     }
 
-    function setTwaLiquidityInternal(
-        uint16 marketId,
-        uint token0Liq,
-        uint token1Liq
-    ) internal {
+    function setTwaLiquidityInternal(uint16 marketId, uint token0Liq, uint token1Liq) internal {
         uint oldToken0Liq = twaLiquidity[marketId].token0Liq;
         uint oldToken1Liq = twaLiquidity[marketId].token1Liq;
         twaLiquidity[marketId] = Liquidity(token0Liq, token1Liq);
-        emit NewLiquidity(
-            marketId,
-            oldToken0Liq,
-            oldToken1Liq,
-            token0Liq,
-            token1Liq
-        );
+        emit NewLiquidity(marketId, oldToken0Liq, oldToken1Liq, token0Liq, token1Liq);
     }
 
-    function toBorrowVars(
-        uint16 marketId,
-        bool collateralIndex
-    ) internal view returns (BorrowVars memory) {
+    function toBorrowVars(uint16 marketId, bool collateralIndex) internal view returns (BorrowVars memory) {
         BorrowVars memory borrowVars;
-        borrowVars.collateralToken = collateralIndex
-            ? markets[marketId].token1
-            : markets[marketId].token0;
-        borrowVars.borrowToken = collateralIndex
-            ? markets[marketId].token0
-            : markets[marketId].token1;
-        borrowVars.borrowPool = collateralIndex
-            ? markets[marketId].pool0
-            : markets[marketId].pool1;
-        borrowVars.collateralTotalReserve = OPBorrowingLib.balanceOf(
-            IERC20(borrowVars.collateralToken)
-        );
-        borrowVars.collateralTotalShare = totalShares[
-            borrowVars.collateralToken
-        ];
-        borrowVars.borrowTotalReserve = OPBorrowingLib.balanceOf(
-            IERC20(borrowVars.borrowToken)
-        );
+        borrowVars.collateralToken = collateralIndex ? markets[marketId].token1 : markets[marketId].token0;
+        borrowVars.borrowToken = collateralIndex ? markets[marketId].token0 : markets[marketId].token1;
+        borrowVars.borrowPool = collateralIndex ? markets[marketId].pool0 : markets[marketId].pool1;
+        borrowVars.collateralTotalReserve = OPBorrowingLib.balanceOf(IERC20(borrowVars.collateralToken));
+        borrowVars.collateralTotalShare = totalShares[borrowVars.collateralToken];
+        borrowVars.borrowTotalReserve = OPBorrowingLib.balanceOf(IERC20(borrowVars.borrowToken));
         borrowVars.borrowTotalShare = totalShares[borrowVars.borrowToken];
         return borrowVars;
     }

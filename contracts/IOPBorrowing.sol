@@ -30,20 +30,9 @@ contract OPBorrowingStorage {
         uint borrowFees
     );
 
-    event CollRepay(
-        address indexed borrower,
-        uint16 marketId,
-        bool collateralIndex,
-        uint repayAmount,
-        uint collateral
-    );
+    event CollRepay(address indexed borrower, uint16 marketId, bool collateralIndex, uint repayAmount, uint collateral);
 
-    event CollRedeem(
-        address indexed borrower,
-        uint16 marketId,
-        bool collateralIndex,
-        uint collateral
-    );
+    event CollRedeem(address indexed borrower, uint16 marketId, bool collateralIndex, uint collateral);
 
     event CollLiquidate(
         address indexed borrower,
@@ -57,13 +46,7 @@ contract OPBorrowingStorage {
         uint token0Price
     );
 
-    event NewLiquidity(
-        uint16 marketId,
-        uint oldToken0Liq,
-        uint oldToken1Liq,
-        uint newToken0Liq,
-        uint newToken1Liq
-    );
+    event NewLiquidity(uint16 marketId, uint oldToken0Liq, uint oldToken1Liq, uint newToken0Liq, uint newToken1Liq);
 
     event NewMarketConf(
         uint16 marketId,
@@ -142,8 +125,7 @@ contract OPBorrowingStorage {
     mapping(uint16 => MarketConf) public marketsConf;
 
     // mapping of borrower, marketId, collateralIndex to collateral balances
-    mapping(address => mapping(uint16 => mapping(bool => Borrow)))
-        public activeBorrows;
+    mapping(address => mapping(uint16 => mapping(bool => Borrow))) public activeBorrows;
 
     // mapping of marketId to insurances
     mapping(uint16 => Insurance) public insurances;
@@ -180,39 +162,16 @@ interface IOPBorrowing {
     ) external;
 
     // only controller
-    function addMarket(
-        uint16 marketId,
-        LPoolInterface pool0,
-        LPoolInterface pool1,
-        bytes memory dexData
-    ) external;
+    function addMarket(uint16 marketId, LPoolInterface pool0, LPoolInterface pool1, bytes memory dexData) external;
 
     /*** Borrower Functions ***/
-    function borrow(
-        uint16 marketId,
-        bool collateralIndex,
-        uint collateral,
-        uint borrowing
-    ) external payable;
+    function borrow(uint16 marketId, bool collateralIndex, uint collateral, uint borrowing) external payable;
 
-    function repay(
-        uint16 marketId,
-        bool collateralIndex,
-        uint repayAmount,
-        bool isRedeem
-    ) external payable;
+    function repay(uint16 marketId, bool collateralIndex, uint repayAmount, bool isRedeem) external payable;
 
-    function redeem(
-        uint16 marketId,
-        bool collateralIndex,
-        uint collateral
-    ) external;
+    function redeem(uint16 marketId, bool collateralIndex, uint collateral) external;
 
-    function liquidate(
-        uint16 marketId,
-        bool collateralIndex,
-        address borrower
-    ) external;
+    function liquidate(uint16 marketId, bool collateralIndex, address borrower) external;
 
     function collateralRatio(
         uint16 marketId,
@@ -223,28 +182,13 @@ interface IOPBorrowing {
     /*** Admin Functions ***/
     function migrateOpenLevMarkets(uint16 from, uint16 to) external;
 
-    function setTwaLiquidity(
-        uint16[] calldata marketIds,
-        OPBorrowingStorage.Liquidity[] calldata liquidity
-    ) external;
+    function setTwaLiquidity(uint16[] calldata marketIds, OPBorrowingStorage.Liquidity[] calldata liquidity) external;
 
-    function setMarketDefConf(
-        OPBorrowingStorage.MarketConf calldata _marketConf
-    ) external;
+    function setMarketDefConf(OPBorrowingStorage.MarketConf calldata _marketConf) external;
 
-    function setMarketConf(
-        uint16 marketId,
-        OPBorrowingStorage.MarketConf calldata _marketConf
-    ) external;
+    function setMarketConf(uint16 marketId, OPBorrowingStorage.MarketConf calldata _marketConf) external;
 
-    function setLiquidationConf(
-        OPBorrowingStorage.LiquidationConf calldata _liquidationConf
-    ) external;
+    function setLiquidationConf(OPBorrowingStorage.LiquidationConf calldata _liquidationConf) external;
 
-    function moveInsurance(
-        uint16 marketId,
-        bool tokenIndex,
-        address to,
-        uint moveShare
-    ) external;
+    function moveInsurance(uint16 marketId, bool tokenIndex, address to, uint moveShare) external;
 }

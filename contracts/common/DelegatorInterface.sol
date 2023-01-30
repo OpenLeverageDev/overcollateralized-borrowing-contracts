@@ -10,10 +10,7 @@ abstract contract DelegatorInterface {
     /**
      * Emitted when implementation is changed
      */
-    event NewImplementation(
-        address oldImplementation,
-        address newImplementation
-    );
+    event NewImplementation(address oldImplementation, address newImplementation);
 
     /**
      * Called by the admin to update the implementation of the delegator
@@ -28,10 +25,7 @@ abstract contract DelegatorInterface {
      * @param data The raw data to delegatecall
      * @return The returned bytes from the delegatecall
      */
-    function delegateTo(
-        address callee,
-        bytes memory data
-    ) internal returns (bytes memory) {
+    function delegateTo(address callee, bytes memory data) internal returns (bytes memory) {
         (bool success, bytes memory returnData) = callee.delegatecall(data);
         assembly {
             if eq(success, 0) {
@@ -47,9 +41,7 @@ abstract contract DelegatorInterface {
      * @param data The raw data to delegatecall
      * @return The returned bytes from the delegatecall
      */
-    function delegateToImplementation(
-        bytes memory data
-    ) public returns (bytes memory) {
+    function delegateToImplementation(bytes memory data) public returns (bytes memory) {
         return delegateTo(implementation, data);
     }
 
@@ -60,9 +52,7 @@ abstract contract DelegatorInterface {
      * @param data The raw data to delegatecall
      * @return The returned bytes from the delegatecall
      */
-    function delegateToViewImplementation(
-        bytes memory data
-    ) public view returns (bytes memory) {
+    function delegateToViewImplementation(bytes memory data) public view returns (bytes memory) {
         (bool success, bytes memory returnData) = address(this).staticcall(
             abi.encodeWithSignature("delegateToImplementation(bytes)", data)
         );

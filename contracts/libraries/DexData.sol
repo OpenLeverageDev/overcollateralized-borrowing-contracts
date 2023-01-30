@@ -45,10 +45,7 @@ library DexData {
     }
 
     function toFee(bytes memory data) internal pure returns (uint24) {
-        require(
-            data.length >= ARRYLENTH_INDEX,
-            "DexData: toFee wrong data format"
-        );
+        require(data.length >= ARRYLENTH_INDEX, "DexData: toFee wrong data format");
         uint temp;
         assembly {
             temp := mload(add(data, add(0x20, FEE_INDEX)))
@@ -57,10 +54,7 @@ library DexData {
     }
 
     function toDexDetail(bytes memory data) internal pure returns (uint32) {
-        require(
-            data.length >= FEE_INDEX,
-            "DexData: toDexDetail wrong data format"
-        );
+        require(data.length >= FEE_INDEX, "DexData: toDexDetail wrong data format");
         if (isUniV2Class(data)) {
             uint8 temp;
             assembly {

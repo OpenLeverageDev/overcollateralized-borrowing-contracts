@@ -10,12 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 library OPBorrowingLib {
     using TransferHelper for IERC20;
 
-    function transferIn(
-        address from,
-        IERC20 token,
-        address weth,
-        uint amount
-    ) internal returns (uint) {
+    function transferIn(address from, IERC20 token, address weth, uint amount) internal returns (uint) {
         if (address(token) == weth) {
             IWETH(weth).deposit{ value: msg.value }();
             return msg.value;
@@ -24,12 +19,7 @@ library OPBorrowingLib {
         }
     }
 
-    function doTransferOut(
-        address to,
-        IERC20 token,
-        address weth,
-        uint amount
-    ) internal {
+    function doTransferOut(address to, IERC20 token, address weth, uint amount) internal {
         if (address(token) == weth) {
             IWETH(weth).withdraw(amount);
             (bool success, ) = to.call{ value: amount }("");
@@ -39,28 +29,17 @@ library OPBorrowingLib {
         }
     }
 
-    function borrowBehalf(
-        LPoolInterface pool,
-        address token,
-        address account,
-        uint amount
-    ) internal returns (uint) {
+    function borrowBehalf(LPoolInterface pool, address token, address account, uint amount) internal returns (uint) {
         uint balance = balanceOf(IERC20(token));
         pool.borrowBehalf(account, amount);
         return balanceOf(IERC20(token)) - (balance);
     }
 
-    function borrowCurrent(
-        LPoolInterface pool,
-        address account
-    ) internal view returns (uint256) {
+    function borrowCurrent(LPoolInterface pool, address account) internal view returns (uint256) {
         return pool.borrowBalanceCurrent(account);
     }
 
-    function borrowStored(
-        LPoolInterface pool,
-        address account
-    ) internal view returns (uint256) {
+    function borrowStored(LPoolInterface pool, address account) internal view returns (uint256) {
         return pool.borrowBalanceStored(account);
     }
 
@@ -76,11 +55,7 @@ library OPBorrowingLib {
         return ERC20(token).decimals();
     }
 
-    function safeApprove(
-        IERC20 token,
-        address spender,
-        uint256 amount
-    ) internal {
+    function safeApprove(IERC20 token, address spender, uint256 amount) internal {
         token.safeApprove(spender, amount);
     }
 
@@ -88,21 +63,11 @@ library OPBorrowingLib {
         token.safeTransfer(to, amount);
     }
 
-    function amountToShare(
-        uint amount,
-        uint totalShare,
-        uint reserve
-    ) internal pure returns (uint share) {
-        share = totalShare > 0 && reserve > 0
-            ? (totalShare * amount) / reserve
-            : amount;
+    function amountToShare(uint amount, uint totalShare, uint reserve) internal pure returns (uint share) {
+        share = totalShare > 0 && reserve > 0 ? (totalShare * amount) / reserve : amount;
     }
 
-    function shareToAmount(
-        uint share,
-        uint totalShare,
-        uint reserve
-    ) internal pure returns (uint amount) {
+    function shareToAmount(uint share, uint totalShare, uint reserve) internal pure returns (uint amount) {
         if (totalShare > 0 && reserve > 0) {
             amount = (reserve * share) / totalShare;
         }

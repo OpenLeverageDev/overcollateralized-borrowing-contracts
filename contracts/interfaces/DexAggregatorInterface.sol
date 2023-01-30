@@ -14,16 +14,7 @@ interface DexAggregatorInterface {
         address quoteToken,
         uint32 secondsAgo,
         bytes memory dexData
-    )
-        external
-        view
-        returns (
-            uint256 price,
-            uint256 cAvgPrice,
-            uint256 hAvgPrice,
-            uint8 decimals,
-            uint256 timestamp
-        );
+    ) external view returns (uint256 price, uint256 cAvgPrice, uint256 hAvgPrice, uint8 decimals, uint256 timestamp);
 
     function updatePriceOracle(
         address desToken,
@@ -32,11 +23,7 @@ interface DexAggregatorInterface {
         bytes memory data
     ) external returns (bool);
 
-    function getToken0Liquidity(
-        address token0,
-        address token1,
-        bytes memory dexData
-    ) external view returns (uint);
+    function getToken0Liquidity(address token0, address token1, bytes memory dexData) external view returns (uint);
 
     function getPairLiquidity(
         address token0,

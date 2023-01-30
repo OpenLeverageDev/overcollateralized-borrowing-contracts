@@ -32,22 +32,15 @@ contract MockLPool is LPoolInterface {
         return MockToken(underlying).balanceOf(address(this));
     }
 
-    function borrowBalanceCurrent(
-        address account
-    ) external view override returns (uint) {
+    function borrowBalanceCurrent(address account) external view override returns (uint) {
         return borrowBalanceCurrentInternal(account);
     }
 
-    function borrowBalanceStored(
-        address account
-    ) external view override returns (uint) {
+    function borrowBalanceStored(address account) external view override returns (uint) {
         return accountBorrows[account].principal;
     }
 
-    function borrowBehalf(
-        address borrower,
-        uint borrowAmount
-    ) external override {
+    function borrowBehalf(address borrower, uint borrowAmount) external override {
         accrueInterest();
         uint accBorrows = borrowBalanceCurrentInternal(borrower);
         accountBorrows[borrower].principal = accBorrows + borrowAmount;
@@ -56,45 +49,24 @@ contract MockLPool is LPoolInterface {
         MockToken(underlying).transfer(msg.sender, borrowAmount);
     }
 
-    function repayBorrowBehalf(
-        address borrower,
-        uint repayAmount
-    ) external override {
+    function repayBorrowBehalf(address borrower, uint repayAmount) external override {
         accrueInterest();
         uint accBorrows = borrowBalanceCurrentInternal(borrower);
         uint balancePrior = MockToken(underlying).balanceOf(address(this));
-        MockToken(underlying).transferFrom(
-            msg.sender,
-            address(this),
-            repayAmount
-        );
-        repayAmount =
-            MockToken(underlying).balanceOf(address(this)) -
-            balancePrior;
+        MockToken(underlying).transferFrom(msg.sender, address(this), repayAmount);
+        repayAmount = MockToken(underlying).balanceOf(address(this)) - balancePrior;
         if (repayAmount > accBorrows) {
-            require(
-                (repayAmount * (1e18)) / (accBorrows) <= 105e16,
-                "repay more than 5%"
-            );
+            require((repayAmount * (1e18)) / (accBorrows) <= 105e16, "repay more than 5%");
         }
-        uint decreaseBorrows = accBorrows > repayAmount
-            ? repayAmount
-            : accBorrows;
+        uint decreaseBorrows = accBorrows > repayAmount ? repayAmount : accBorrows;
         accountBorrows[borrower].principal = accBorrows - decreaseBorrows;
         accountBorrows[borrower].borrowIndex = borrowIndex;
         totalBorrows = totalBorrows - decreaseBorrows;
     }
 
-    function repayBorrowEndByOpenLev(
-        address borrower,
-        uint repayAmount
-    ) external override {
+    function repayBorrowEndByOpenLev(address borrower, uint repayAmount) external override {
         accrueInterest();
-        MockToken(underlying).transferFrom(
-            msg.sender,
-            address(this),
-            repayAmount
-        );
+        MockToken(underlying).transferFrom(msg.sender, address(this), repayAmount);
         uint accBorrows = borrowBalanceCurrentInternal(borrower);
         accountBorrows[borrower].principal = 0;
         accountBorrows[borrower].borrowIndex = borrowIndex;
@@ -114,36 +86,25 @@ contract MockLPool is LPoolInterface {
         uint blockDelta = currentBlockNumber - accrualBlockNumberPrior;
 
         uint simpleInterestFactor = borrowRateOfPerBlock * blockDelta;
-        uint interestAccumulated = (simpleInterestFactor * borrowsPrior) /
-            RATE_DENOMINATOR;
+        uint interestAccumulated = (simpleInterestFactor * borrowsPrior) / RATE_DENOMINATOR;
         uint totalBorrowsNew = borrowsPrior + interestAccumulated;
-        uint borrowIndexNew = borrowIndexPrior +
-            (borrowIndexPrior * simpleInterestFactor) /
-            RATE_DENOMINATOR;
+        uint borrowIndexNew = borrowIndexPrior + (borrowIndexPrior * simpleInterestFactor) / RATE_DENOMINATOR;
 
         accrualBlockNumber = currentBlockNumber;
         borrowIndex = borrowIndexNew;
         totalBorrows = totalBorrowsNew;
     }
 
-    function borrowBalanceCurrentInternal(
-        address account
-    ) internal view returns (uint) {
+    function borrowBalanceCurrentInternal(address account) internal view returns (uint) {
         if (accountBorrows[account].principal == 0) {
             return 0;
         }
         uint cBorrowIndex = calBorrowIndex();
-        return
-            (accountBorrows[account].principal * cBorrowIndex) /
-            accountBorrows[account].borrowIndex;
+        return (accountBorrows[account].principal * cBorrowIndex) / accountBorrows[account].borrowIndex;
     }
 
     function calBorrowIndex() internal view returns (uint) {
         return
-            borrowIndex +
-            (borrowIndex *
-                (block.number - accrualBlockNumber) *
-                borrowRateOfPerBlock) /
-            RATE_DENOMINATOR;
+            borrowIndex + (borrowIndex * (block.number - accrualBlockNumber) * borrowRateOfPerBlock) / RATE_DENOMINATOR;
     }
 }

@@ -20,16 +20,11 @@ abstract contract Adminable {
         _;
     }
     modifier onlyAdminOrDeveloper() {
-        require(
-            msg.sender == admin || msg.sender == developer,
-            "caller must be admin or developer"
-        );
+        require(msg.sender == admin || msg.sender == developer, "caller must be admin or developer");
         _;
     }
 
-    function setPendingAdmin(
-        address payable newPendingAdmin
-    ) external virtual onlyAdmin {
+    function setPendingAdmin(address payable newPendingAdmin) external virtual onlyAdmin {
         // Save current value, if any, for inclusion in log
         address oldPendingAdmin = pendingAdmin;
         // Store pendingAdmin with value newPendingAdmin
@@ -39,10 +34,7 @@ abstract contract Adminable {
     }
 
     function acceptAdmin() external virtual {
-        require(
-            msg.sender == pendingAdmin,
-            "only pendingAdmin can accept admin"
-        );
+        require(msg.sender == pendingAdmin, "only pendingAdmin can accept admin");
         // Save current values for inclusion in log
         address oldAdmin = admin;
         address oldPendingAdmin = pendingAdmin;

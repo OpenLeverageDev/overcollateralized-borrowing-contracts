@@ -37,20 +37,13 @@ contract MockTaxToken is ERC20 {
         emit Transfer(address(0), account, amount);
     }
 
-    function transfer(
-        address to,
-        uint256 amount
-    ) public override returns (bool) {
+    function transfer(address to, uint256 amount) public override returns (bool) {
         address from = _msgSender();
         _transfer(from, to, amount);
         return true;
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) public override returns (bool) {
+    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
         _spendAllowance(from, msg.sender, amount);
         _transfer(from, to, amount);
         return true;
@@ -60,16 +53,9 @@ contract MockTaxToken is ERC20 {
         return _balances[account];
     }
 
-    function _transfer(
-        address from,
-        address to,
-        uint amount
-    ) internal override {
+    function _transfer(address from, address to, uint amount) internal override {
         uint256 fromBalance = _balances[from];
-        require(
-            fromBalance >= amount,
-            "ERC20: transfer amount exceeds balance"
-        );
+        require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
 
         unchecked {
             _balances[from] -= amount;

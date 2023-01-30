@@ -3,11 +3,7 @@
 pragma solidity >0.7.6;
 
 interface ControllerInterface {
-    function collBorrowAllowed(
-        uint marketId,
-        address borrower,
-        bool collateralIndex
-    ) external view returns (bool);
+    function collBorrowAllowed(uint marketId, address borrower, bool collateralIndex) external view returns (bool);
 
     function collRepayAllowed(uint marketId) external view returns (bool);
 
