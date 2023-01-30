@@ -1,8 +1,9 @@
 module.exports = {
-  skipFiles: ['mocks/MockBuyback.sol',
+  skipFiles: [
+    'mocks/MockBuyBack.sol',
     'mocks/MockController.sol',
     'mocks/MockDeflationToken.sol',
-    'mocks/DexAgg.sol',
+    'mocks/MockDexAgg.sol',
     'mocks/MockLPool.sol',
     'mocks/MockOpenLev.sol',
     'mocks/MockTaxToken.sol',
