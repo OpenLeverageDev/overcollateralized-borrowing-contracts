@@ -551,12 +551,10 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
     function updatePrices(address collateralToken, address borrowToken, uint16 twapDuration, uint32 dex) internal
     returns (uint price, uint cAvgPrice, uint hAvgPrice, uint8 decimals, uint timestamp){
         bytes memory dexData = OPBorrowingLib.uint32ToBytes(dex);
-        dexAgg.updatePriceOracle(collateralToken, borrowToken, twapDuration, dexData);
-        (price, cAvgPrice, hAvgPrice, decimals, timestamp) = dexAgg.getPriceCAvgPriceHAvgPrice(collateralToken, borrowToken, twapDuration, dexData);
-        // ignore hAvgPrice
-        if (block.timestamp > (timestamp + twapDuration)) {
-            hAvgPrice = cAvgPrice;
+        if (dexData.isUniV2Class()) {
+            dexAgg.updatePriceOracle(collateralToken, borrowToken, twapDuration, dexData);
         }
+        (price, cAvgPrice, hAvgPrice, decimals, timestamp) = dexAgg.getPriceCAvgPriceHAvgPrice(collateralToken, borrowToken, twapDuration, dexData);
     }
 
     function addMarketInternal(uint16 marketId, LPoolInterface pool0, LPoolInterface pool1, address token0, address token1, bytes memory dexData) internal {

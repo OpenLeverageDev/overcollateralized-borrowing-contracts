@@ -48,7 +48,7 @@ contract OPBorrowingStorage {
 
     struct MarketConf {
         uint16 collateralRatio; //  the collateral ratio, 6000 => 60%
-        uint16 maxLiquidityRatio; // the borrowing fees ratio, 1000 => 10%
+        uint16 maxLiquidityRatio; // the maximum pool's total borrowed cannot be exceeded dex liquidity*ratio, 1000 => 10%
         uint16 borrowFeesRatio; // the borrowing fees ratio, 30 => 0.3%
         uint16 insuranceRatio; // the insurance percentage of the borrowing fees, 3000 => 30%
         uint16 poolReturnsRatio; // the pool's returns percentage of the borrowing fees, 3000 => 30%
