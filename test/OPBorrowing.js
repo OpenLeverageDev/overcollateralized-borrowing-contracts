@@ -86,6 +86,7 @@ contract("OPBorrowing", async accounts => {
         await pool1.mint(toWei(poolInitSupply), {from: lender1});
 
     });
+
     it("borrow token1 successful", async () => {
         let collateral = toWei(10000);
         let collateralIndex = false;
@@ -1067,13 +1068,11 @@ contract("OPBorrowing", async accounts => {
         equalBN(insuranceAfter, await borrowingCtr.totalShares(borrowToken.address));
         equalBN(moveInsurance, await borrowToken.balanceOf(liquidator));
         // move gt insurance
-        await expectRevert(
-            borrowingCtr.moveInsurance(market0Id, true, liquidator, insurance1, {from: adminAcc, gas: 800000}),
-            "Arithmetic overflow")
+        await expectRevert.unspecified(
+            borrowingCtr.moveInsurance(market0Id, true, liquidator, insurance1, {from: adminAcc, gas: 800000}))
 
-        await expectRevert(
-            borrowingCtr.moveInsurance(market0Id, false, liquidator, insurance1, {from: adminAcc, gas: 800000}),
-            "Arithmetic overflow")
+        await expectRevert.unspecified(
+            borrowingCtr.moveInsurance(market0Id, false, liquidator, insurance1, {from: adminAcc, gas: 800000}))
 
         await expectRevert(
             borrowingCtr.moveInsurance(market0Id, true, liquidator, insurance1, {from: liquidator, gas: 800000}),

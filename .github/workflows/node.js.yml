@@ -35,3 +35,9 @@ jobs:
       - run: npm install
       - run: nohup ganache-cli --gasLimit 8000000 &
       - run: truffle test
+      - run: npx hardhat coverage
+
+      - uses: actions/checkout@master
+      - uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
