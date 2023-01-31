@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.17.0;
+pragma solidity ^0.8.17;
 
 import "./interfaces/LPoolInterface.sol";
 import "./libraries/TransferHelper.sol";

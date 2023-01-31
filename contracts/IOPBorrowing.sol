@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.17.0;
+pragma solidity ^0.8.17;
 
 import "./interfaces/LPoolInterface.sol";
 import "./interfaces/OpenLevInterface.sol";
@@ -10,41 +10,16 @@ import "./interfaces/XOLEInterface.sol";
 import "./interfaces/OPBuyBackInterface.sol";
 
 contract OPBorrowingStorage {
-    event NewMarket(
-        uint16 marketId,
-        LPoolInterface pool0,
-        LPoolInterface pool1,
-        address token0,
-        address token1,
-        uint32 dex,
-        uint token0Liq,
-        uint token1Liq
-    );
 
-    event CollBorrow(
-        address indexed borrower,
-        uint16 marketId,
-        bool collateralIndex,
-        uint collateral,
-        uint borrow,
-        uint borrowFees
-    );
+    event NewMarket(uint16 marketId, LPoolInterface pool0, LPoolInterface pool1, address token0, address token1, uint32 dex, uint token0Liq, uint token1Liq);
+
+    event CollBorrow(address indexed borrower, uint16 marketId, bool collateralIndex, uint collateral, uint borrow, uint borrowFees);
 
     event CollRepay(address indexed borrower, uint16 marketId, bool collateralIndex, uint repayAmount, uint collateral);
 
     event CollRedeem(address indexed borrower, uint16 marketId, bool collateralIndex, uint collateral);
 
-    event CollLiquidate(
-        address indexed borrower,
-        uint16 marketId,
-        bool collateralIndex,
-        address liquidator,
-        uint collateralDecrease,
-        uint repayAmount,
-        uint outstandingAmount,
-        uint liquidateFees,
-        uint token0Price
-    );
+    event CollLiquidate(address indexed borrower, uint16 marketId, bool collateralIndex, address liquidator, uint collateralDecrease, uint repayAmount, uint outstandingAmount, uint liquidateFees, uint token0Price);
 
     event NewLiquidity(uint16 marketId, uint oldToken0Liq, uint oldToken1Liq, uint newToken0Liq, uint newToken1Liq);
 
@@ -64,11 +39,11 @@ contract OPBorrowingStorage {
     );
 
     struct Market {
-        LPoolInterface pool0; // pool0 address
-        LPoolInterface pool1; // pool1 address
-        address token0; // token0 address
-        address token1; // token1 address
-        uint32 dex; // decentralized exchange
+        LPoolInterface pool0;// pool0 address
+        LPoolInterface pool1;// pool1 address
+        address token0;// token0 address
+        address token1;// token1 address
+        uint32 dex;// decentralized exchange
     }
 
     struct MarketConf {
@@ -85,23 +60,18 @@ contract OPBorrowingStorage {
         uint16 twapDuration; // the TWAP duration, 60 => 60s
     }
 
-    struct Borrow {
-        uint collateral; // the collateral share
-        uint128 lastBlockNum; // the last updated block number
-    }
-
     struct Liquidity {
-        uint token0Liq; // the token0 liquidity
-        uint token1Liq; // the token1 liquidity
+        uint token0Liq;// the token0 liquidity
+        uint token1Liq;// the token1 liquidity
     }
 
     struct Insurance {
         uint insurance0; // the token0 insurance
-        uint insurance1; // the token1 insurance
+        uint insurance1;// the token1 insurance
     }
 
     struct LiquidationConf {
-        uint128 liquidatorXOLEHeld; //  the minimum amount of xole held by liquidator
+        uint128 liquidatorXOLEHeld;//  the minimum amount of xole held by liquidator
         uint8 priceDiffRatio; // the maximum ratio of real price diff TWAP, 10 => 10%
         OPBuyBackInterface buyBack; // the ole buyback contract address
     }
@@ -124,8 +94,8 @@ contract OPBorrowingStorage {
     // mapping of marketId to market config
     mapping(uint16 => MarketConf) public marketsConf;
 
-    // mapping of borrower, marketId, collateralIndex to collateral balances
-    mapping(address => mapping(uint16 => mapping(bool => Borrow))) public activeBorrows;
+    // mapping of borrower, marketId, collateralIndex to collateral shares
+    mapping(address => mapping(uint16 => mapping(bool => uint))) public activeBorrows;
 
     // mapping of marketId to insurances
     mapping(uint16 => Insurance) public insurances;
@@ -140,13 +110,11 @@ contract OPBorrowingStorage {
 
     LiquidationConf public liquidationConf;
 
-    constructor(
-        OpenLevInterface _openLev,
+    constructor(OpenLevInterface _openLev,
         ControllerInterface _controller,
         DexAggregatorInterface _dexAgg,
         XOLEInterface _xOLE,
-        address _wETH
-    ) {
+        address _wETH){
         openLev = _openLev;
         controller = _controller;
         dexAgg = _dexAgg;
@@ -167,17 +135,13 @@ interface IOPBorrowing {
     /*** Borrower Functions ***/
     function borrow(uint16 marketId, bool collateralIndex, uint collateral, uint borrowing) external payable;
 
-    function repay(uint16 marketId, bool collateralIndex, uint repayAmount, bool isRedeem) external payable;
+    function repay(uint16 marketId, bool collateralIndex, uint repayAmount, bool isRedeem) external payable returns (uint redeemShare);
 
     function redeem(uint16 marketId, bool collateralIndex, uint collateral) external;
 
     function liquidate(uint16 marketId, bool collateralIndex, address borrower) external;
 
-    function collateralRatio(
-        uint16 marketId,
-        bool collateralIndex,
-        address borrower
-    ) external view returns (uint current);
+    function collateralRatio(uint16 marketId, bool collateralIndex, address borrower) external view returns (uint current);
 
     /*** Admin Functions ***/
     function migrateOpenLevMarkets(uint16 from, uint16 to) external;
