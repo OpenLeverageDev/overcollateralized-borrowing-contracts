@@ -60,11 +60,6 @@ contract OPBorrowingStorage {
         uint16 twapDuration; // the TWAP duration, 60 => 60s
     }
 
-    struct Borrow {
-        uint collateral;// the collateral share
-        uint128 lastBlockNum;// the last updated block number
-    }
-
     struct Liquidity {
         uint token0Liq;// the token0 liquidity
         uint token1Liq;// the token1 liquidity
@@ -99,8 +94,8 @@ contract OPBorrowingStorage {
     // mapping of marketId to market config
     mapping(uint16 => MarketConf) public marketsConf;
 
-    // mapping of borrower, marketId, collateralIndex to collateral balances
-    mapping(address => mapping(uint16 => mapping(bool => Borrow))) public activeBorrows;
+    // mapping of borrower, marketId, collateralIndex to collateral shares
+    mapping(address => mapping(uint16 => mapping(bool => uint))) public activeBorrows;
 
     // mapping of marketId to insurances
     mapping(uint16 => Insurance) public insurances;
@@ -140,7 +135,7 @@ interface IOPBorrowing {
     /*** Borrower Functions ***/
     function borrow(uint16 marketId, bool collateralIndex, uint collateral, uint borrowing) external payable;
 
-    function repay(uint16 marketId, bool collateralIndex, uint repayAmount, bool isRedeem) external payable;
+    function repay(uint16 marketId, bool collateralIndex, uint repayAmount, bool isRedeem) external payable returns (uint redeemShare);
 
     function redeem(uint16 marketId, bool collateralIndex, uint collateral) external;
 

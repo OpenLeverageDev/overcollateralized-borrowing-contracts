@@ -63,10 +63,6 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
     function borrow(uint16 marketId, bool collateralIndex, uint collateral, uint borrowing) external payable override nonReentrant {
         address borrower = msg.sender;
         controller.collBorrowAllowed(marketId, borrower, collateralIndex);
-        // update borrower last block number
-        updateBorrowerBlockNum(borrower, marketId, collateralIndex);
-
-        Borrow storage accBorrow = activeBorrows[borrower][marketId][collateralIndex];
 
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
 
@@ -76,7 +72,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
         if (collateral > 0) {
             // amount to share
             collateral = OPBorrowingLib.amountToShare(collateral, borrowVars.collateralTotalShare, borrowVars.collateralTotalReserve);
-            increaseCollateralShare(accBorrow, borrowVars.collateralToken, collateral);
+            increaseCollateralShare(borrower, marketId, collateralIndex, borrowVars.collateralToken, collateral);
         }
         require(collateral > 0 || borrowing > 0, "CB0");
         uint fees = 0;
@@ -90,23 +86,26 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
 
             uint borrowed = OPBorrowingLib.borrowBehalf(borrowVars.borrowPool, borrowVars.borrowToken, borrower, borrowing);
             // check pool's liquidity * maxLiquidityRatio >= totalBorrow
-            uint borrowTWALiquidity = collateralIndex ? twaLiquidity[marketId].token0Liq : twaLiquidity[marketId].token1Liq;
-            bytes memory dexData = OPBorrowingLib.uint32ToBytes(markets[marketId].dex);
-            uint borrowLiquidity = dexAgg.getToken0Liquidity(borrowVars.borrowToken, borrowVars.collateralToken, dexData);
-            uint minLiquidity = Utils.minOf(borrowTWALiquidity, borrowLiquidity);
-            require((minLiquidity * marketConf.maxLiquidityRatio) / RATIO_DENOMINATOR >= borrowVars.borrowPool.totalBorrows(), "BGL");
-            // check healthy
-            uint accountTotalBorrowed = OPBorrowingLib.borrowStored(borrowVars.borrowPool, borrower);
-            require(
-                checkHealthy(
-                    marketId,
-                    OPBorrowingLib.shareToAmount(accBorrow.collateral, totalShares[borrowVars.collateralToken], OPBorrowingLib.balanceOf(IERC20(borrowVars.collateralToken))),
-                    accountTotalBorrowed,
-                    borrowVars.collateralToken,
-                    borrowVars.borrowToken
-                ),
-                "BNH"
-            );
+            {
+                uint borrowTWALiquidity = collateralIndex ? twaLiquidity[marketId].token0Liq : twaLiquidity[marketId].token1Liq;
+                bytes memory dexData = OPBorrowingLib.uint32ToBytes(markets[marketId].dex);
+                uint borrowLiquidity = dexAgg.getToken0Liquidity(borrowVars.borrowToken, borrowVars.collateralToken, dexData);
+                uint minLiquidity = Utils.minOf(borrowTWALiquidity, borrowLiquidity);
+                require((minLiquidity * marketConf.maxLiquidityRatio) / RATIO_DENOMINATOR >= borrowVars.borrowPool.totalBorrows(), "BGL");
+                // check healthy
+                uint totalCollateral = activeBorrows[borrower][marketId][collateralIndex];
+                uint accountTotalBorrowed = OPBorrowingLib.borrowStored(borrowVars.borrowPool, borrower);
+                require(
+                    checkHealthy(
+                        marketId,
+                        OPBorrowingLib.shareToAmount(totalCollateral, totalShares[borrowVars.collateralToken], OPBorrowingLib.balanceOf(IERC20(borrowVars.collateralToken))),
+                        accountTotalBorrowed,
+                        borrowVars.collateralToken,
+                        borrowVars.borrowToken
+                    ),
+                    "BNH"
+                );
+            }
             // collect borrow fees
             fees = collectBorrowFee(marketId, collateralIndex, borrowing, borrowVars.borrowToken, borrowVars.borrowPool, borrowVars.borrowTotalReserve, borrowVars.borrowTotalShare);
             // transfer out borrowed - fees
@@ -123,14 +122,12 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
     /// @param collateralIndex The collateral index (false means token0)
     /// @param repayAmount The amount to repay
     /// @param isRedeem If equal true, will redeem (repayAmount/totalBorrowing)*collateralAmount token
-    function repay(uint16 marketId, bool collateralIndex, uint repayAmount, bool isRedeem) external payable override nonReentrant {
+    function repay(uint16 marketId, bool collateralIndex, uint repayAmount, bool isRedeem) external payable override nonReentrant returns (uint redeemShare) {
         address borrower = msg.sender;
         controller.collRepayAllowed(marketId);
-        // update borrower last block number
-        updateBorrowerBlockNum(borrower, marketId, collateralIndex);
         // check collateral
-        Borrow storage accBorrow = activeBorrows[borrower][marketId][collateralIndex];
-        checkCollateral(accBorrow);
+        uint collateral = activeBorrows[borrower][marketId][collateralIndex];
+        checkCollateral(collateral);
 
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
 
@@ -146,17 +143,16 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
         uint borrowAfterRepay = OPBorrowingLib.borrowStored(borrowVars.borrowPool, borrower);
         // in the tax token case, should get actual repayment amount
         repayAmount = borrowPrior - borrowAfterRepay;
-        uint redeemShare;
         // borrowing is 0, so return all collateral
         if (borrowAfterRepay == 0) {
-            redeemShare = accBorrow.collateral;
-            decreaseCollateralShare(accBorrow, borrowVars.collateralToken, redeemShare);
+            redeemShare = collateral;
+            decreaseCollateralShare(borrower, marketId, collateralIndex, borrowVars.collateralToken, redeemShare);
             OPBorrowingLib.doTransferOut(borrower, IERC20(borrowVars.collateralToken), wETH, OPBorrowingLib.shareToAmount(redeemShare, borrowVars.collateralTotalShare, borrowVars.collateralTotalReserve));
         }
         // redeem collateral= borrower.collateral * repayRatio
         else if (isRedeem) {
             uint repayRatio = (repayAmount * RATIO_DENOMINATOR) / borrowPrior;
-            redeemShare = (accBorrow.collateral * repayRatio) / RATIO_DENOMINATOR;
+            redeemShare = (collateral * repayRatio) / RATIO_DENOMINATOR;
             if (redeemShare > 0) {
                 redeemInternal(borrower, marketId, collateralIndex, redeemShare, borrowAfterRepay, borrowVars);
             }
@@ -172,8 +168,6 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
     function redeem(uint16 marketId, bool collateralIndex, uint collateral) external override nonReentrant {
         address borrower = msg.sender;
         controller.collRedeemAllowed(marketId);
-        // update borrower last block number
-        updateBorrowerBlockNum(borrower, marketId, collateralIndex);
 
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
 
@@ -208,16 +202,14 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
     /// @param borrower The borrower address
     function liquidate(uint16 marketId, bool collateralIndex, address borrower) external override nonReentrant {
         controller.collLiquidateAllowed(marketId);
-        // update borrower last block number
-        updateBorrowerBlockNum(borrower, marketId, collateralIndex);
         // check collateral
-        Borrow storage accBorrow = activeBorrows[borrower][marketId][collateralIndex];
-        checkCollateral(accBorrow);
+        uint collateral = activeBorrows[borrower][marketId][collateralIndex];
+        checkCollateral(collateral);
 
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
         LiquidateVars memory liquidateVars;
         liquidateVars.borrowing = borrowVars.borrowPool.borrowBalanceCurrent(borrower);
-        liquidateVars.collateralAmount = OPBorrowingLib.shareToAmount(accBorrow.collateral, borrowVars.collateralTotalShare, borrowVars.collateralTotalReserve);
+        liquidateVars.collateralAmount = OPBorrowingLib.shareToAmount(collateral, borrowVars.collateralTotalShare, borrowVars.collateralTotalReserve);
 
         // check liquidable
         require(checkLiquidable(marketId, liquidateVars.collateralAmount, liquidateVars.borrowing, borrowVars.collateralToken, borrowVars.borrowToken), "BIH");
@@ -226,7 +218,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
         // compute liquidation collateral
         MarketConf storage marketConf = marketsConf[marketId];
         liquidateVars.liquidationAmount = liquidateVars.collateralAmount;
-        liquidateVars.liquidationShare = accBorrow.collateral;
+        liquidateVars.liquidationShare = collateral;
         liquidateVars.dexData = OPBorrowingLib.uint32ToBytes(markets[marketId].dex);
         // liquidationAmount = collateralAmount/2 when the collateralAmount >= liquidity * liquidateMaxLiquidityRatio
         {
@@ -275,7 +267,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
         unchecked {
             liquidateVars.liquidationFees = liquidateVars.buyAmount - liquidateVars.repayAmount;
         }
-            liquidateVars.liquidationShare = accBorrow.collateral;
+            liquidateVars.liquidationShare = collateral;
         }
         /*
          * if buySuccess==false and isPartialLiquidate==true, sell liquidation amount and repay with buyAmount
@@ -307,7 +299,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
         }
         // collect liquidation fees
         collectLiquidationFee(marketId, collateralIndex, liquidateVars.liquidationFees, borrowVars.borrowToken, borrowVars.borrowPool, borrowVars.borrowTotalReserve, borrowVars.borrowTotalShare);
-        decreaseCollateralShare(accBorrow, borrowVars.collateralToken, liquidateVars.liquidationShare);
+        decreaseCollateralShare(borrower, marketId, collateralIndex, borrowVars.collateralToken, liquidateVars.liquidationShare);
         // transfer remaining collateral to borrower
         if (liquidateVars.collateralToBorrower > 0) {
             OPBorrowingLib.doTransferOut(borrower, IERC20(borrowVars.collateralToken), wETH, liquidateVars.collateralToBorrower);
@@ -325,8 +317,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
     function collateralRatio(uint16 marketId, bool collateralIndex, address borrower) external view override returns (uint){
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
         uint borrowed = borrowVars.borrowPool.borrowBalanceCurrent(borrower);
-        Borrow storage accBorrow = activeBorrows[borrower][marketId][collateralIndex];
-        uint collateral = accBorrow.collateral;
+        uint collateral = activeBorrows[borrower][marketId][collateralIndex];
         if (borrowed == 0 || collateral == 0) {
             return 100 * RATIO_DENOMINATOR;
         }
@@ -398,16 +389,16 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
     }
 
     function redeemInternal(address borrower, uint16 marketId, bool collateralIndex, uint redeemShare, uint borrowing, BorrowVars memory borrowVars) internal {
-        Borrow storage accBorrow = activeBorrows[borrower][marketId][collateralIndex];
-        require(accBorrow.collateral >= redeemShare, "RGC");
-        decreaseCollateralShare(accBorrow, borrowVars.collateralToken, redeemShare);
+        uint collateral = activeBorrows[borrower][marketId][collateralIndex];
+        require(collateral >= redeemShare, "RGC");
+        decreaseCollateralShare(borrower, marketId, collateralIndex, borrowVars.collateralToken, redeemShare);
         // redeem
         OPBorrowingLib.doTransferOut(borrower, IERC20(borrowVars.collateralToken), wETH, OPBorrowingLib.shareToAmount(redeemShare, borrowVars.collateralTotalShare, borrowVars.collateralTotalReserve));
         // check healthy
         require(
             checkHealthy(
                 marketId,
-                OPBorrowingLib.shareToAmount(accBorrow.collateral, totalShares[borrowVars.collateralToken], OPBorrowingLib.balanceOf(IERC20(borrowVars.collateralToken))),
+                OPBorrowingLib.shareToAmount(activeBorrows[borrower][marketId][collateralIndex], totalShares[borrowVars.collateralToken], OPBorrowingLib.balanceOf(IERC20(borrowVars.collateralToken))),
                 borrowing,
                 borrowVars.collateralToken,
                 borrowVars.borrowToken
@@ -416,13 +407,13 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
         );
     }
 
-    function increaseCollateralShare(Borrow storage accBorrow, address token, uint increaseShare) internal {
-        accBorrow.collateral += increaseShare;
+    function increaseCollateralShare(address borrower, uint16 marketId, bool collateralIndex, address token, uint increaseShare) internal {
+        activeBorrows[borrower][marketId][collateralIndex] += increaseShare;
         totalShares[token] += increaseShare;
     }
 
-    function decreaseCollateralShare(Borrow storage accBorrow, address token, uint decreaseShare) internal {
-        accBorrow.collateral -= decreaseShare;
+    function decreaseCollateralShare(address borrower, uint16 marketId, bool collateralIndex, address token, uint decreaseShare) internal {
+        activeBorrows[borrower][marketId][collateralIndex] -= decreaseShare;
         totalShares[token] -= decreaseShare;
     }
 
@@ -444,15 +435,9 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
         totalShares[token] -= decreaseShare;
     }
 
-    function updateBorrowerBlockNum(address borrower, uint16 marketId, bool collateralIndex) internal {
-        Borrow storage accBorrow = activeBorrows[borrower][marketId][collateralIndex];
-        uint blockNum = block.number;
-        require(blockNum != accBorrow.lastBlockNum, "SBN");
-        accBorrow.lastBlockNum = uint128(blockNum);
-    }
 
-    function checkCollateral(Borrow storage accBorrow) internal view {
-        require(accBorrow.collateral > 0, "CE0");
+    function checkCollateral(uint collateral) internal pure {
+        require(collateral > 0, "CE0");
     }
 
     function collectBorrowFee(uint16 marketId, bool collateralIndex, uint borrowed, address borrowToken, LPoolInterface borrowPool, uint borrowTotalReserve, uint borrowTotalShare) internal returns (uint) {

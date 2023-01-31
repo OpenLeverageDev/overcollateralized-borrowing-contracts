@@ -99,9 +99,9 @@ contract("OPBorrowing", async accounts => {
         await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1, gasPrice: 0});
         let ethBalanceAfter = await web3.eth.getBalance(borrower1);
 
-        let activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        let collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
         // active borrows
-        equalBN(collateral, activeBorrows.collateral);
+        equalBN(collateral, collateralOnChain);
         // borrower transfer in
         equalBN(borrowing.mul(toBN(98)).div(toBN(100)), toBN(ethBalanceAfter).sub(toBN(ethBalanceBefore)));
         // borrower transfer out
@@ -124,9 +124,9 @@ contract("OPBorrowing", async accounts => {
             gasPrice: 0,
             value: collateral
         });
-        let activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        let collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
         // active borrows
-        equalBN(collateral, activeBorrows.collateral);
+        equalBN(collateral, collateralOnChain);
         // borrower transfer in
         equalBN(borrowing.mul(toBN(98)).div(toBN(100)), await borrowToken.balanceOf(borrower1));
         // borrower transfer out
@@ -155,9 +155,9 @@ contract("OPBorrowing", async accounts => {
         let ethBalanceAfter = await web3.eth.getBalance(borrower1);
         equalBN(redeemAmount, toBN(ethBalanceAfter).sub(toBN(ethBalanceBefore)));
 
-        let activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
-        equalBN(collateral.sub(redeemAmount), activeBorrows.collateral);
-        equalBN(activeBorrows.collateral, await borrowingCtr.totalShares(collateralToken.address));
+        let collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        equalBN(collateral.sub(redeemAmount), collateralOnChain);
+        equalBN(collateralOnChain, await borrowingCtr.totalShares(collateralToken.address));
     })
 
     it("repay eth and collateral token0 successful", async () => {
@@ -180,9 +180,9 @@ contract("OPBorrowing", async accounts => {
         let ethBalanceAfter = await web3.eth.getBalance(borrower1);
         equalBN(repayAmount, toBN(ethBalanceBefore).sub(toBN(ethBalanceAfter)));
 
-        let activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
-        equalBN(0, activeBorrows.collateral);
-        equalBN(activeBorrows.collateral, await borrowingCtr.totalShares(collateralToken.address));
+        let collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        equalBN(0, collateralOnChain);
+        equalBN(collateralOnChain, await borrowingCtr.totalShares(collateralToken.address));
     })
 
     it("liquidate eth and borrow token0 successful", async () => {
@@ -205,9 +205,9 @@ contract("OPBorrowing", async accounts => {
         await borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator});
         let ethBalanceAfter = await web3.eth.getBalance(borrower1);
         equalBN(collateral.sub(sellAmount), toBN(ethBalanceAfter).sub(toBN(ethBalanceBefore)));
-        let activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
-        equalBN(0, activeBorrows.collateral);
-        equalBN(activeBorrows.collateral, await borrowingCtr.totalShares(collateralToken.address));
+        let collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        equalBN(0, collateralOnChain);
+        equalBN(collateralOnChain, await borrowingCtr.totalShares(collateralToken.address));
         // insurance
         let insurances = await borrowingCtr.insurances(market0Id);
         equalBN("0", insurances.insurance1);
@@ -242,9 +242,9 @@ contract("OPBorrowing", async accounts => {
         let sellAmount = collateral.div(toBN(2));
         await dexAggCtr.setBuyAndSellAmount(0, sellAmount);
         await borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator});
-        let activeBorrows = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
-        equalBN(0, activeBorrows.collateral);
-        equalBN(activeBorrows.collateral, await borrowingCtr.totalShares(collateralToken.address));
+        let collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        equalBN(0, collateralOnChain);
+        equalBN(collateralOnChain, await borrowingCtr.totalShares(collateralToken.address));
         // insurance
         let insurances = await borrowingCtr.insurances(market0Id);
         equalBN("0", insurances.insurance0);

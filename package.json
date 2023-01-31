@@ -52,6 +52,6 @@
     "sol-merger": "^3.1.0",
     "solidity-coverage": "^0.7.16",
     "truffle-plugin-stdjsonin": "github:mhrsalehi/truffle-plugin-stdjsonin",
-    "truffle-plugin-verify": "^0.5.18"
+    "truffle-plugin-verify": "0.5.27"
   }
 }
