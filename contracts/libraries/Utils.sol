@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 library Utils {
     uint private constant FEE_RATE_PRECISION = 10 ** 6;
