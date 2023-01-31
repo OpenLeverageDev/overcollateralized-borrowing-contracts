@@ -10,25 +10,9 @@ import "./interfaces/XOLEInterface.sol";
 import "./interfaces/OPBuyBackInterface.sol";
 
 contract OPBorrowingStorage {
-    event NewMarket(
-        uint16 marketId,
-        LPoolInterface pool0,
-        LPoolInterface pool1,
-        address token0,
-        address token1,
-        uint32 dex,
-        uint token0Liq,
-        uint token1Liq
-    );
+    event NewMarket(uint16 marketId, LPoolInterface pool0, LPoolInterface pool1, address token0, address token1, uint32 dex, uint token0Liq, uint token1Liq);
 
-    event CollBorrow(
-        address indexed borrower,
-        uint16 marketId,
-        bool collateralIndex,
-        uint collateral,
-        uint borrow,
-        uint borrowFees
-    );
+    event CollBorrow(address indexed borrower, uint16 marketId, bool collateralIndex, uint collateral, uint borrow, uint borrowFees);
 
     event CollRepay(address indexed borrower, uint16 marketId, bool collateralIndex, uint repayAmount, uint collateral);
 
@@ -135,13 +119,7 @@ contract OPBorrowingStorage {
 
     LiquidationConf public liquidationConf;
 
-    constructor(
-        OpenLevInterface _openLev,
-        ControllerInterface _controller,
-        DexAggregatorInterface _dexAgg,
-        XOLEInterface _xOLE,
-        address _wETH
-    ) {
+    constructor(OpenLevInterface _openLev, ControllerInterface _controller, DexAggregatorInterface _dexAgg, XOLEInterface _xOLE, address _wETH) {
         openLev = _openLev;
         controller = _controller;
         dexAgg = _dexAgg;
@@ -151,10 +129,7 @@ contract OPBorrowingStorage {
 }
 
 interface IOPBorrowing {
-    function initialize(
-        OPBorrowingStorage.MarketConf memory _marketDefConf,
-        OPBorrowingStorage.LiquidationConf memory _liquidationConf
-    ) external;
+    function initialize(OPBorrowingStorage.MarketConf memory _marketDefConf, OPBorrowingStorage.LiquidationConf memory _liquidationConf) external;
 
     // only controller
     function addMarket(uint16 marketId, LPoolInterface pool0, LPoolInterface pool1, bytes memory dexData) external;
@@ -162,33 +137,20 @@ interface IOPBorrowing {
     /*** Borrower Functions ***/
     function borrow(uint16 marketId, bool collateralIndex, uint collateral, uint borrowing) external payable;
 
-    function repay(
-        uint16 marketId,
-        bool collateralIndex,
-        uint repayAmount,
-        bool isRedeem
-    ) external payable returns (uint redeemShare);
+    function repay(uint16 marketId, bool collateralIndex, uint repayAmount, bool isRedeem) external payable returns (uint redeemShare);
 
     function redeem(uint16 marketId, bool collateralIndex, uint collateral) external;
 
     function liquidate(uint16 marketId, bool collateralIndex, address borrower) external;
 
-    function collateralRatio(
-        uint16 marketId,
-        bool collateralIndex,
-        address borrower
-    ) external view returns (uint current);
+    function collateralRatio(uint16 marketId, bool collateralIndex, address borrower) external view returns (uint current);
 
     /*** Admin Functions ***/
     function migrateOpenLevMarkets(uint16 from, uint16 to) external;
 
     function setTwaLiquidity(uint16[] calldata marketIds, OPBorrowingStorage.Liquidity[] calldata liquidity) external;
 
-    function setMarketDefConf(OPBorrowingStorage.MarketConf calldata _marketConf) external;
-
     function setMarketConf(uint16 marketId, OPBorrowingStorage.MarketConf calldata _marketConf) external;
-
-    function setLiquidationConf(OPBorrowingStorage.LiquidationConf calldata _liquidationConf) external;
 
     function moveInsurance(uint16 marketId, bool tokenIndex, address to, uint moveShare) external;
 }

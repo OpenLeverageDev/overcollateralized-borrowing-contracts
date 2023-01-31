@@ -104,7 +104,6 @@ contract MockLPool is LPoolInterface {
     }
 
     function calBorrowIndex() internal view returns (uint) {
-        return
-            borrowIndex + (borrowIndex * (block.number - accrualBlockNumber) * borrowRateOfPerBlock) / RATE_DENOMINATOR;
+        return borrowIndex + (borrowIndex * (block.number - accrualBlockNumber) * borrowRateOfPerBlock) / RATE_DENOMINATOR;
     }
 }

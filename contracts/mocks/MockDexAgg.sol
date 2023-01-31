@@ -29,11 +29,7 @@ contract MockDexAgg is DexAggregatorInterface {
         _timestamp = timestamp_;
     }
 
-    function getPrice(
-        address desToken,
-        address quoteToken,
-        bytes memory data
-    ) external view override returns (uint256 price, uint8 decimals) {
+    function getPrice(address desToken, address quoteToken, bytes memory data) external view override returns (uint256 price, uint8 decimals) {
         desToken;
         quoteToken;
         data;
@@ -46,12 +42,7 @@ contract MockDexAgg is DexAggregatorInterface {
         address quoteToken,
         uint32 secondsAgo,
         bytes memory dexData
-    )
-        external
-        view
-        override
-        returns (uint256 price, uint256 cAvgPrice, uint256 hAvgPrice, uint8 decimals, uint256 timestamp)
-    {
+    ) external view override returns (uint256 price, uint256 cAvgPrice, uint256 hAvgPrice, uint8 decimals, uint256 timestamp) {
         desToken;
         quoteToken;
         secondsAgo;
@@ -63,12 +54,7 @@ contract MockDexAgg is DexAggregatorInterface {
         timestamp = _timestamp;
     }
 
-    function updatePriceOracle(
-        address desToken,
-        address quoteToken,
-        uint32 timeWindow,
-        bytes memory data
-    ) external override returns (bool) {
+    function updatePriceOracle(address desToken, address quoteToken, uint32 timeWindow, bytes memory data) external override returns (bool) {
         desToken;
         quoteToken;
         data;
@@ -88,11 +74,7 @@ contract MockDexAgg is DexAggregatorInterface {
         return token0Liq;
     }
 
-    function getPairLiquidity(
-        address token0,
-        address token1,
-        bytes memory dexData
-    ) external view override returns (uint, uint) {
+    function getPairLiquidity(address token0, address token1, bytes memory dexData) external view override returns (uint, uint) {
         token0;
         token1;
         dexData;
@@ -129,13 +111,7 @@ contract MockDexAgg is DexAggregatorInterface {
         return mockSellAmount;
     }
 
-    function sell(
-        address buyToken,
-        address sellToken,
-        uint _sellAmount,
-        uint minBuyAmount,
-        bytes memory data
-    ) external override returns (uint) {
+    function sell(address buyToken, address sellToken, uint _sellAmount, uint minBuyAmount, bytes memory data) external override returns (uint) {
         data;
         uint mockBuyAmount = buyAmount == 0 ? minBuyAmount : buyAmount;
         MockToken(buyToken).mint(address(this), mockBuyAmount);

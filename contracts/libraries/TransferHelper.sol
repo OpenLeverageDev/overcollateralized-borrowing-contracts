@@ -18,18 +18,11 @@ library TransferHelper {
         }
     }
 
-    function safeTransferFrom(
-        IERC20 _token,
-        address _from,
-        address _to,
-        uint256 _amount
-    ) internal returns (uint256 amountReceived) {
+    function safeTransferFrom(IERC20 _token, address _from, address _to, uint256 _amount) internal returns (uint256 amountReceived) {
         if (_amount > 0) {
             bool success;
             uint256 balanceBefore = _token.balanceOf(_to);
-            (success, ) = address(_token).call(
-                abi.encodeWithSelector(_token.transferFrom.selector, _from, _to, _amount)
-            );
+            (success, ) = address(_token).call(abi.encodeWithSelector(_token.transferFrom.selector, _from, _to, _amount));
             require(success, "TFF");
             uint256 balanceAfter = _token.balanceOf(_to);
             amountReceived = balanceAfter - balanceBefore;

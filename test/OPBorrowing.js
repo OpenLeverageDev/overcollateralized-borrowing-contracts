@@ -690,7 +690,7 @@ contract("OPBorrowing", async accounts => {
         // borrower balance
         equalBN(0, await collateralToken.balanceOf(borrower1));
         let collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
-        equalBN(collateral.sub(sellAmount),collateralOnChain);
+        equalBN(collateral.sub(sellAmount), collateralOnChain);
         let borrows = await borrowPool.borrowBalanceCurrent(borrower1);
         equalBN("1500899999999999999257", borrows);
         equalBN(collateralOnChain, await borrowingCtr.totalShares(collateralToken.address));
@@ -754,7 +754,7 @@ contract("OPBorrowing", async accounts => {
         // borrower balance
         equalBN(0, await collateralToken.balanceOf(borrower1));
         let collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
-        equalBN(0,collateralOnChain);
+        equalBN(0, collateralOnChain);
         // insurance
         let insurances = await borrowingCtr.insurances(market0Id);
         equalBN("0", insurances.insurance1);
@@ -976,6 +976,19 @@ contract("OPBorrowing", async accounts => {
             "Suspended borrowing")
     })
 
+
+    it("initialize market config sender neq admin unsuccessful", async () => {
+        await expectRevert(
+            borrowingCtr.initialize(marketConf, [liquidatorXOLEHeld, priceDiffRatio, buyBackCtr.address], {from: liquidator}),
+            "caller must be admin")
+    })
+
+    it("add market sender neq controller unsuccessful", async () => {
+        await expectRevert(
+            borrowingCtr.addMarket(1, pool0.address, pool1.address, "0x03", {from: liquidator}),
+            "NCN")
+    })
+
     it("migrate markets successful", async () => {
         let dexs = [1];
         await openLevCtr.setMarket(1, pool0.address, pool1.address, token0.address, token1.address, dexs);
@@ -1008,15 +1021,6 @@ contract("OPBorrowing", async accounts => {
             "Only admin or dev")
     })
 
-    it("set marketDefConf successful", async () => {
-        marketConf[0] = 6000;
-        await borrowingCtr.setMarketDefConf(marketConf, {from: adminAcc});
-        let marketDefConf = await borrowingCtr.marketDefConf();
-        equalBN(marketConf[0], marketDefConf.collateralRatio);
-        await expectRevert(
-            borrowingCtr.setMarketDefConf(marketConf, {from: liquidator}),
-            "caller must be admin")
-    })
 
     it("set marketConf successful", async () => {
         await borrowingCtr.setMarketConf(1, marketConf, {from: adminAcc});
@@ -1027,17 +1031,6 @@ contract("OPBorrowing", async accounts => {
             "caller must be admin")
     })
 
-    it("set liquidationConf successful", async () => {
-        let conf = [100, 1, token0.address];
-        await borrowingCtr.setLiquidationConf(conf, {from: adminAcc});
-        let liqConf = await borrowingCtr.liquidationConf();
-        equalBN(conf[0], liqConf[0]);
-        equalBN(conf[1], liqConf[1]);
-        equalBN(conf[2], conf[2]);
-        await expectRevert(
-            borrowingCtr.setLiquidationConf(conf, {from: liquidator}),
-            "caller must be admin")
-    })
 
     it("move insurance successful", async () => {
         let collateral = toWei(1000);

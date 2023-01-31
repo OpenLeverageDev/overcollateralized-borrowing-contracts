@@ -43,21 +43,15 @@ contract MockController is ControllerInterface {
         return true;
     }
 
-    function collRepayAllowed(
-        uint marketId
-    ) external view override onlyOpBorrowingNotSuspended(marketId) returns (bool) {
+    function collRepayAllowed(uint marketId) external view override onlyOpBorrowingNotSuspended(marketId) returns (bool) {
         return true;
     }
 
-    function collRedeemAllowed(
-        uint marketId
-    ) external view override onlyOpBorrowingNotSuspended(marketId) returns (bool) {
+    function collRedeemAllowed(uint marketId) external view override onlyOpBorrowingNotSuspended(marketId) returns (bool) {
         return true;
     }
 
-    function collLiquidateAllowed(
-        uint marketId
-    ) external view override onlyOpBorrowingNotSuspended(marketId) returns (bool) {
+    function collLiquidateAllowed(uint marketId) external view override onlyOpBorrowingNotSuspended(marketId) returns (bool) {
         return true;
     }
 

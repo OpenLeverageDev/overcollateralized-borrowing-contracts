@@ -9,14 +9,7 @@ contract MockOpenLev is OpenLevInterface {
     mapping(uint16 => Market) private _markets;
     mapping(uint16 => uint32[]) private dexs;
 
-    function setMarket(
-        uint16 marketId,
-        address pool0,
-        address pool1,
-        address token0,
-        address token1,
-        uint32[] memory _dexs
-    ) external {
+    function setMarket(uint16 marketId, address pool0, address pool1, address token0, address token1, uint32[] memory _dexs) external {
         Market memory market;
         market.pool0 = pool0;
         market.pool1 = pool1;

@@ -16,10 +16,7 @@ contract OPBorrowingDelegator is DelegatorInterface, Adminable {
         admin = payable(msg.sender);
         // Creator of the contract is admin during initialization
         // First delegate gets to initialize the delegator (i.e. storage contract)
-        delegateTo(
-            implementation_,
-            abi.encodeWithSelector(IOPBorrowing(implementation_).initialize.selector, _marketDefConf, _liquidationConf)
-        );
+        delegateTo(implementation_, abi.encodeWithSelector(IOPBorrowing(implementation_).initialize.selector, _marketDefConf, _liquidationConf));
         implementation = implementation_;
         // Set the proper admin now that initialization is done
         admin = _admin;
