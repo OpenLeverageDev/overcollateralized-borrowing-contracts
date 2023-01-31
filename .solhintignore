@@ -15,3 +15,4 @@ artifacts
 
 .DS_Store
 package-lock.json
+contracts/mocks/*.sol

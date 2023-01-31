@@ -23,7 +23,7 @@ library OPBorrowingLib {
         if (address(token) == weth) {
             IWETH(weth).withdraw(amount);
             (bool success, ) = to.call{ value: amount }("");
-            require(success);
+            require(success, "Transfer failed");
         } else {
             token.safeTransfer(to, amount);
         }
