@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity ^0.8.17.0;
 
 import "./common/DelegateInterface.sol";
 import "./common/Adminable.sol";

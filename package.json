@@ -6,9 +6,15 @@
   "directories": {
     "test": "test"
   },
+  "husky": {
+    "hooks": {
+      "pre-push": "npm run prettier"
+    }
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prettier": "prettier --write 'contracts/**/*.sol'"
+    "prettier": "./node_modules/.bin/prettier --write contracts/**/*.sol",
+    "solhint": "./node_modules/.bin/solhint -f table contracts/**/*.sol"
   },
   "repository": {
     "type": "git",
@@ -51,10 +57,13 @@
     "hardhat": "^2.12.6",
     "hardhat-gas-reporter": "^1.0.9",
     "hardhat-truffle5": "^1.0.1",
+    "husky": "^8.0.3",
     "mocha-logger": "^1.0.7",
     "prettier": "^2.8.3",
     "prettier-plugin-solidity": "^1.1.1",
     "sol-merger": "^3.1.0",
+    "solhint": "^3.3.8",
+    "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "0.8.2",
     "truffle-plugin-stdjsonin": "github:mhrsalehi/truffle-plugin-stdjsonin",
     "truffle-plugin-verify": "^0.5.18",
