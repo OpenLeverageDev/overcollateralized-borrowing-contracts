@@ -1005,7 +1005,7 @@ contract("OPBorrowing", async accounts => {
         equalBN(liqToken1, twaLiquidity.token1Liq);
         await expectRevert(
             borrowingCtr.setTwaLiquidity([0], [[liqToken0, liqToken1]], {from: liquidator}),
-            "caller must be admin or developer")
+            "Only admin or dev")
     })
 
     it("set marketDefConf successful", async () => {
