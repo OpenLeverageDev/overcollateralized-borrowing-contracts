@@ -16,12 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Run solhint with contracthsark
-        uses: contractshark/inject-solhint-ci@1.0.0+0
-        with:
-          github_token: ${{ secrets.github_token }}
-          reporter: github-pr-review # Change reporter.
-          solhint_input: 'contracts/*.sol'
+      - run: npm install
+      - run: npm run solhint
 
   test:
     runs-on: ubuntu-latest

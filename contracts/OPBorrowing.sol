@@ -91,7 +91,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
             increaseCollateralShare(borrower, marketId, collateralIndex, borrowVars.collateralToken, collateral);
         }
         require(collateral > 0 || borrowing > 0, "CB0");
-        uint fees = 0;
+        uint fees;
         if (borrowing > 0) {
             // check minimal borrowing > absolute value 0.0001
             {
