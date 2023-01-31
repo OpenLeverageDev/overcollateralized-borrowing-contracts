@@ -4,10 +4,13 @@ pragma solidity ^0.8.17;
 import "../interfaces/DexAggregatorInterface.sol";
 import "./MockToken.sol";
 import "../libraries/Utils.sol";
+import "../libraries/DexData.sol";
 
 pragma experimental ABIEncoderV2;
 
 contract MockDexAgg is DexAggregatorInterface {
+    using DexData for bytes;
+
     uint8 private constant _decimals = 24;
     uint256 private _price;
     uint256 private _cAvgPrice;
@@ -57,8 +60,8 @@ contract MockDexAgg is DexAggregatorInterface {
     function updatePriceOracle(address desToken, address quoteToken, uint32 timeWindow, bytes memory data) external override returns (bool) {
         desToken;
         quoteToken;
-        data;
         _timeWindow = timeWindow;
+        require(data.isUniV2Class(), 'DER');
         return true;
     }
 

@@ -12,13 +12,13 @@ import "./interfaces/OPBuyBackInterface.sol";
 contract OPBorrowingStorage {
     event NewMarket(uint16 marketId, LPoolInterface pool0, LPoolInterface pool1, address token0, address token1, uint32 dex, uint token0Liq, uint token1Liq);
 
-    event CollBorrow(address indexed borrower, uint16 marketId, bool collateralIndex, uint collateral, uint borrow, uint borrowFees);
+    event Borrow(address indexed borrower, uint16 marketId, bool collateralIndex, uint collateral, uint borrow, uint borrowFees);
 
-    event CollRepay(address indexed borrower, uint16 marketId, bool collateralIndex, uint repayAmount, uint collateral);
+    event Repay(address indexed borrower, uint16 marketId, bool collateralIndex, uint repayAmount, uint collateral);
 
-    event CollRedeem(address indexed borrower, uint16 marketId, bool collateralIndex, uint collateral);
+    event Redeem(address indexed borrower, uint16 marketId, bool collateralIndex, uint collateral);
 
-    event CollLiquidate(
+    event Liquidate(
         address indexed borrower,
         uint16 marketId,
         bool collateralIndex,
@@ -104,7 +104,7 @@ contract OPBorrowingStorage {
     mapping(uint16 => MarketConf) public marketsConf;
 
     // mapping of borrower, marketId, collateralIndex to collateral shares
-    mapping(address => mapping(uint16 => mapping(bool => uint))) public activeBorrows;
+    mapping(address => mapping(uint16 => mapping(bool => uint))) public activeCollaterals;
 
     // mapping of marketId to insurances
     mapping(uint16 => Insurance) public insurances;
@@ -151,6 +151,8 @@ interface IOPBorrowing {
     function setTwaLiquidity(uint16[] calldata marketIds, OPBorrowingStorage.Liquidity[] calldata liquidity) external;
 
     function setMarketConf(uint16 marketId, OPBorrowingStorage.MarketConf calldata _marketConf) external;
+
+    function setMarketDex(uint16 marketId,uint32 dex) external;
 
     function moveInsurance(uint16 marketId, bool tokenIndex, address to, uint moveShare) external;
 }

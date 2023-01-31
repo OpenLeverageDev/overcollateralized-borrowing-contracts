@@ -98,7 +98,7 @@ contract("OPBorrowing", async accounts => {
         await collateralToken.mint(borrower1, collateral);
         await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1, gasPrice: 0});
 
-        let collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        let collateralOnChain = await borrowingCtr.activeCollaterals(borrower1, market0Id, collateralIndex);
         // active borrows
         equalBN(collateral, collateralOnChain);
         // borrower transfer in
@@ -119,7 +119,7 @@ contract("OPBorrowing", async accounts => {
         collateralRatio = await borrowingCtr.collateralRatio(market0Id, collateralIndex, borrower1);
         equalBN("13497", collateralRatio);
         equalBN(redeemAmount.mul(deflationRatio).div(toBN(100)), await collateralToken.balanceOf(borrower1));
-        collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        collateralOnChain = await borrowingCtr.activeCollaterals(borrower1, market0Id, collateralIndex);
         equalBN(collateral.sub(redeemAmount), collateralOnChain);
         equalBN(collateralOnChain, await borrowingCtr.totalShares(collateralToken.address));
         await collateralToken.transfer(lender2, await collateralToken.balanceOf(borrower1), {from: borrower1});
@@ -129,7 +129,7 @@ contract("OPBorrowing", async accounts => {
         // borrow more
         let collateralBefore = collateralOnChain;
         await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1, gasPrice: 0});
-        collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        collateralOnChain = await borrowingCtr.activeCollaterals(borrower1, market0Id, collateralIndex);
         let totalBalance = await collateralToken.balanceOf(borrowingCtr.address);
         equalBN(collateralBefore.add(collateral.mul(await borrowingCtr.totalShares(collateralToken.address)).div(totalBalance)), collateralOnChain);
         equalBN(collateralOnChain, await borrowingCtr.totalShares(collateralToken.address));
@@ -147,11 +147,11 @@ contract("OPBorrowing", async accounts => {
         // borrower1 redeem all
         await borrowToken.mint(borrower1, borrowing.mul(toBN(3)));
         await borrowingCtr.repay(market0Id, collateralIndex, maxUint(), false, {from: borrower1});
-        collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        collateralOnChain = await borrowingCtr.activeCollaterals(borrower1, market0Id, collateralIndex);
         equalBN(totalBalance, await collateralToken.balanceOf(borrower1));
         equalBN("0",collateralOnChain);
         // check borrower2
-        let collateralOnChain2 = await borrowingCtr.activeBorrows(borrower2, market0Id, collateralIndex);
+        let collateralOnChain2 = await borrowingCtr.activeCollaterals(borrower2, market0Id, collateralIndex);
         equalBN("19996", await borrowingCtr.collateralRatio(market0Id, collateralIndex, borrower2));
         equalBN("19999999999999998",collateralOnChain2);
         equalBN(collateralOnChain2, await borrowingCtr.totalShares(collateralToken.address));
@@ -168,7 +168,7 @@ contract("OPBorrowing", async accounts => {
         await collateralToken.mint(borrower1, collateral);
         await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1, gasPrice: 0});
 
-        let collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        let collateralOnChain = await borrowingCtr.activeCollaterals(borrower1, market0Id, collateralIndex);
         // active borrows
         equalBN(collateral, collateralOnChain);
         let collateralRatio = await borrowingCtr.collateralRatio(market0Id, collateralIndex, borrower1);
@@ -185,7 +185,7 @@ contract("OPBorrowing", async accounts => {
         await borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator});
         // borrower balance
         equalBN(collateral.mul(deflationRatio).div(toBN(100)).sub(sellAmount), await collateralToken.balanceOf(borrower1));
-        collateralOnChain = await borrowingCtr.activeBorrows(borrower1, market0Id, collateralIndex);
+        collateralOnChain = await borrowingCtr.activeCollaterals(borrower1, market0Id, collateralIndex);
         equalBN(collateralOnChain, await borrowingCtr.totalShares(collateralToken.address));
         equalBN("0", await borrowingCtr.totalShares(collateralToken.address));
     })
