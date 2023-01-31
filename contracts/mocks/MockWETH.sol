@@ -5,7 +5,6 @@ import "../common/IWETH.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MockWETH is IWETH, ERC20("WETH", "WETH") {
-
     function deposit() external payable override {
         _mint(msg.sender, msg.value);
     }
@@ -16,7 +15,7 @@ contract MockWETH is IWETH, ERC20("WETH", "WETH") {
 
     function withdraw(uint256 amount) external override {
         _burn(msg.sender, amount);
-        (bool success,) = msg.sender.call{value : amount}("");
+        (bool success, ) = msg.sender.call{ value: amount }("");
         require(success);
     }
 }

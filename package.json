@@ -43,15 +43,21 @@
   },
   "bundleDependencies": false,
   "devDependencies": {
+    "@nomiclabs/hardhat-truffle5": "^2.0.7",
+    "@nomiclabs/hardhat-web3": "^2.0.0",
     "@truffle/hdwallet-provider": "2.0.15",
     "eth-gas-reporter": "^0.2.20",
     "eth-lightwallet": "^4.0.0",
+    "hardhat": "^2.12.6",
+    "hardhat-gas-reporter": "^1.0.9",
+    "hardhat-truffle5": "^1.0.1",
     "mocha-logger": "^1.0.7",
-    "prettier": "^2.7.1",
-    "prettier-plugin-solidity": "^1.0.0-beta.24",
+    "prettier": "^2.8.3",
+    "prettier-plugin-solidity": "^1.1.1",
     "sol-merger": "^3.1.0",
-    "solidity-coverage": "^0.7.16",
+    "solidity-coverage": "0.8.2",
     "truffle-plugin-stdjsonin": "github:mhrsalehi/truffle-plugin-stdjsonin",
-    "truffle-plugin-verify": "0.5.27"
+    "truffle-plugin-verify": "0.5.27",
+    "web3": "^1.8.1"
   }
 }

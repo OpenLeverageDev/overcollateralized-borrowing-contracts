@@ -15,6 +15,7 @@ contract MockTaxToken is ERC20 {
     constructor(string memory name_) ERC20(name_, name_) {
         mint(msg.sender, 10000000 ether);
     }
+
     function setDexAgg(address _dexAgg) public {
         dexAgg = _dexAgg;
     }
@@ -36,13 +37,20 @@ contract MockTaxToken is ERC20 {
         emit Transfer(address(0), account, amount);
     }
 
-    function transfer(address to, uint256 amount) public override returns (bool) {
+    function transfer(
+        address to,
+        uint256 amount
+    ) public override returns (bool) {
         address from = _msgSender();
         _transfer(from, to, amount);
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public override returns (bool) {
         _spendAllowance(from, msg.sender, amount);
         _transfer(from, to, amount);
         return true;
@@ -52,24 +60,29 @@ contract MockTaxToken is ERC20 {
         return _balances[account];
     }
 
-    function _transfer(address from, address to, uint amount) internal override {
+    function _transfer(
+        address from,
+        address to,
+        uint amount
+    ) internal override {
         uint256 fromBalance = _balances[from];
-        require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
+        require(
+            fromBalance >= amount,
+            "ERC20: transfer amount exceeds balance"
+        );
 
-    unchecked {
-        _balances[from] -= amount;
-    }
+        unchecked {
+            _balances[from] -= amount;
+        }
         if (from == dexAgg) {
-            amount = amount - (amount * buyFees / 100);
+            amount = amount - ((amount * buyFees) / 100);
         } else if (to == dexAgg) {
-            amount = amount - (amount * sellFees / 100);
+            amount = amount - ((amount * sellFees) / 100);
         } else {
-            amount = amount - (amount * transFees / 100);
+            amount = amount - ((amount * transFees) / 100);
         }
         _balances[to] += amount;
 
         emit Transfer(from, to, amount);
     }
-
-
 }

@@ -16,7 +16,14 @@ contract OPBorrowingDelegator is DelegatorInterface, Adminable {
         admin = payable(msg.sender);
         // Creator of the contract is admin during initialization
         // First delegate gets to initialize the delegator (i.e. storage contract)
-        delegateTo(implementation_, abi.encodeWithSelector(IOPBorrowing(implementation_).initialize.selector, _marketDefConf, _liquidationConf));
+        delegateTo(
+            implementation_,
+            abi.encodeWithSelector(
+                IOPBorrowing(implementation_).initialize.selector,
+                _marketDefConf,
+                _liquidationConf
+            )
+        );
         implementation = implementation_;
         // Set the proper admin now that initialization is done
         admin = _admin;
@@ -26,7 +33,9 @@ contract OPBorrowingDelegator is DelegatorInterface, Adminable {
      * Called by the admin to update the implementation of the delegator
      * @param implementation_ The address of the new implementation for delegation
      */
-    function setImplementation(address implementation_) public override onlyAdmin {
+    function setImplementation(
+        address implementation_
+    ) public override onlyAdmin {
         address oldImplementation = implementation;
         implementation = implementation_;
         emit NewImplementation(oldImplementation, implementation);

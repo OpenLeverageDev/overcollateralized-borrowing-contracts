@@ -3,11 +3,12 @@
     {
       "files": "*.sol",
       "options": {
-        "printWidth": 240,
+        "printWidth": 80,
         "tabWidth": 4,
         "useTabs": false,
         "singleQuote": false,
-        "bracketSpacing": false
+        "bracketSpacing": true,
+        "compiler": "0.8.17"
       }
     }
   ]
