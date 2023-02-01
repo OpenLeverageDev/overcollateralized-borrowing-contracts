@@ -250,7 +250,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
                 liquidateVars.isPartialLiquidate = true;
             }
         }
-        (liquidateVars.price0,) = dexAgg.getPrice(markets[marketId].token0, markets[marketId].token1, liquidateVars.dexData);
+        (liquidateVars.price0, ) = dexAgg.getPrice(markets[marketId].token0, markets[marketId].token1, liquidateVars.dexData);
         // compute sell collateral amount, borrowings + liquidationFees + tax
         {
             uint24 borrowTokenTransTax = openLev.taxes(marketId, borrowVars.borrowToken, 0);
@@ -260,7 +260,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
             liquidateVars.repayAmount = Utils.toAmountBeforeTax(liquidateVars.borrowing, borrowTokenTransTax);
             liquidateVars.liquidationFees = (liquidateVars.borrowing * marketConf.liquidateFeesRatio) / RATIO_DENOMINATOR;
             OPBorrowingLib.safeApprove(IERC20(borrowVars.collateralToken), address(dexAgg), liquidateVars.liquidationAmount);
-            (liquidateVars.buySuccess,) = address(dexAgg).call(
+            (liquidateVars.buySuccess, ) = address(dexAgg).call(
                 abi.encodeWithSelector(
                     dexAgg.buy.selector,
                     borrowVars.borrowToken,
@@ -284,9 +284,9 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
             OPBorrowingLib.repay(borrowVars.borrowPool, borrower, liquidateVars.repayAmount);
             // check borrowing is 0
             require(OPBorrowingLib.borrowStored(borrowVars.borrowPool, borrower) == 0, "BG0");
-        unchecked {
-            liquidateVars.liquidationFees = liquidateVars.buyAmount - liquidateVars.repayAmount;
-        }
+            unchecked {
+                liquidateVars.liquidationFees = liquidateVars.buyAmount - liquidateVars.repayAmount;
+            }
             liquidateVars.liquidationShare = collateral;
         }
         /*
@@ -449,9 +449,9 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
             checkHealthy(
                 marketId,
                 OPBorrowingLib.shareToAmount(
-                        activeCollaterals[borrower][marketId][collateralIndex],
-                        totalShares[borrowVars.collateralToken],
-                        OPBorrowingLib.balanceOf(IERC20(borrowVars.collateralToken))
+                    activeCollaterals[borrower][marketId][collateralIndex],
+                    totalShares[borrowVars.collateralToken],
+                    OPBorrowingLib.balanceOf(IERC20(borrowVars.collateralToken))
                 ),
                 borrowing,
                 borrowVars.collateralToken,
@@ -549,7 +549,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
             uint buyBackAmount = liquidationFees - poolReturns - insurance - liquidatorReturns;
             if (buyBackAmount > 0) {
                 OPBorrowingLib.safeApprove(IERC20(borrowToken), address(liquidationConf.buyBack), buyBackAmount);
-                (buyBackSuccess,) = address(liquidationConf.buyBack).call(
+                (buyBackSuccess, ) = address(liquidationConf.buyBack).call(
                     abi.encodeWithSelector(liquidationConf.buyBack.transferIn.selector, borrowToken, buyBackAmount)
                 );
             }
@@ -567,7 +567,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
         uint collateralPrice;
         uint denominator;
         {
-            (uint price, uint cAvgPrice, uint hAvgPrice, uint8 decimals,) = updatePrices(collateralToken, borrowToken, marketConf.twapDuration, dex);
+            (uint price, uint cAvgPrice, uint hAvgPrice, uint8 decimals, ) = updatePrices(collateralToken, borrowToken, marketConf.twapDuration, dex);
             collateralPrice = Utils.minOf(Utils.minOf(price, cAvgPrice), hAvgPrice);
             denominator = (10 ** uint(decimals));
         }
@@ -585,7 +585,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
         uint collateralPrice;
         uint denominator;
         {
-            (uint price, uint cAvgPrice, uint hAvgPrice, uint8 decimals,) = updatePrices(collateralToken, borrowToken, marketConf.twapDuration, dex);
+            (uint price, uint cAvgPrice, uint hAvgPrice, uint8 decimals, ) = updatePrices(collateralToken, borrowToken, marketConf.twapDuration, dex);
             // avoids flash loan
             if (price < cAvgPrice && price != 0) {
                 uint diffPriceRatio = (cAvgPrice * 100) / price;

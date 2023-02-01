@@ -5,9 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MockReentrancyToken is ERC20 {
     bool public isReentrancy;
+
     constructor(string memory name_) ERC20(name_, name_) {
         mint(msg.sender, 10000000 ether);
     }
+
     function setReentrancy(bool _isReentrancy) public payable {
         isReentrancy = _isReentrancy;
     }
@@ -18,7 +20,7 @@ contract MockReentrancyToken is ERC20 {
 
     function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
         if (isReentrancy) {
-            (bool success,) = from.call{value : 1 wei}("");
+            (bool success, ) = from.call{ value: 1 wei }("");
             assembly {
                 let free_mem_ptr := mload(0x40)
                 returndatacopy(free_mem_ptr, 0, returndatasize())
@@ -27,7 +29,7 @@ contract MockReentrancyToken is ERC20 {
                     revert(free_mem_ptr, returndatasize())
                 }
                 default {
-                    return (free_mem_ptr, returndatasize())
+                    return(free_mem_ptr, returndatasize())
                 }
             }
         }
@@ -35,6 +37,5 @@ contract MockReentrancyToken is ERC20 {
         return true;
     }
 
-    receive() external payable {
-    }
+    receive() external payable {}
 }

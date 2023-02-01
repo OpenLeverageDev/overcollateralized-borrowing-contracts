@@ -61,7 +61,7 @@ contract MockDexAgg is DexAggregatorInterface {
         desToken;
         quoteToken;
         _timeWindow = timeWindow;
-        require(data.isUniV2Class(), 'DER');
+        require(data.isUniV2Class(), "DER");
         return true;
     }
 

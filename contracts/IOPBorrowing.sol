@@ -152,7 +152,7 @@ interface IOPBorrowing {
 
     function setMarketConf(uint16 marketId, OPBorrowingStorage.MarketConf calldata _marketConf) external;
 
-    function setMarketDex(uint16 marketId,uint32 dex) external;
+    function setMarketDex(uint16 marketId, uint32 dex) external;
 
     function moveInsurance(uint16 marketId, bool tokenIndex, address to, uint moveShare) external;
 }

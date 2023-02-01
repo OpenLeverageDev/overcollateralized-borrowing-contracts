@@ -17,7 +17,6 @@ contract MockReentrancyHacker {
         opBorrowing = _opBorrowing;
     }
 
-
     function borrow(uint16 marketId, bool collateralIndex, uint collateral, uint borrowing) public {
         opBorrowing.borrow(marketId, collateralIndex, collateral, borrowing);
     }
