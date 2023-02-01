@@ -1065,6 +1065,36 @@ contract("OPBorrowing", async accounts => {
         await borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator});
     })
 
+    it("borrow with 0 fees successful", async () => {
+        let collateral = toWei(4000);
+        let collateralIndex = true;
+        let collateralToken = token1;
+        let borrowToken = token0;
+        let borrowing = toWei(1800);
+        await collateralToken.mint(borrower1, collateral);
+        let market0Conf = JSON.parse(JSON.stringify(marketConf));
+        market0Conf[2] = 0;
+        await borrowingCtr.setMarketConf(market0Id, market0Conf, {from: adminAcc});
+        await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1});
+        equalBN(borrowing, await borrowToken.balanceOf(borrower1));
+    })
+
+    it("liquidate with 0 fees successful", async () => {
+        let collateral = toWei(4000);
+        let collateralIndex = true;
+        let collateralToken = token1;
+        let borrowToken = token0;
+        let borrowing = toWei(2000);
+        await collateralToken.mint(borrower1, collateral);
+        let market0Conf = JSON.parse(JSON.stringify(marketConf));
+        market0Conf[5] = 0;
+        await borrowingCtr.setMarketConf(market0Id, market0Conf, {from: adminAcc});
+        await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1});
+        await xoleCtr.mint(toWei(liquidatorXOLEHeld), {from: liquidator});
+        await borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator});
+        equalBN("0", await borrowToken.balanceOf(liquidator));
+    })
+
     it("suspend successful", async () => {
         await controllerCtr.setSuspend(true, {from: adminAcc});
         await expectRevert(
@@ -1123,6 +1153,9 @@ contract("OPBorrowing", async accounts => {
         await expectRevert(
             borrowingCtr.setTwaLiquidity([0], [[liqToken0, liqToken1]], {from: liquidator}),
             "Only admin or dev")
+        await expectRevert(
+            borrowingCtr.setTwaLiquidity([], [[liqToken0, liqToken1]], {from: adminAcc}),
+            "IIL")
     })
 
     it("set marketConf successful", async () => {
