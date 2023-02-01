@@ -142,7 +142,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
 
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
 
-        uint borrowPrior = borrowVars.borrowPool.borrowBalanceCurrent(borrower);
+        uint borrowPrior = OPBorrowingLib.borrowCurrent(borrowVars.borrowPool, borrower);
         require(borrowPrior > 0, "BL0");
         if (repayAmount == type(uint256).max) {
             repayAmount = borrowPrior;
@@ -187,7 +187,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
 
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
 
-        uint borrowPrior = borrowVars.borrowPool.borrowBalanceCurrent(borrower);
+        uint borrowPrior = OPBorrowingLib.borrowCurrent(borrowVars.borrowPool, borrower);
 
         redeemInternal(borrower, marketId, collateralIndex, collateral, borrowPrior, borrowVars);
 
@@ -224,7 +224,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
 
         BorrowVars memory borrowVars = toBorrowVars(marketId, collateralIndex);
         LiquidateVars memory liquidateVars;
-        liquidateVars.borrowing = borrowVars.borrowPool.borrowBalanceCurrent(borrower);
+        liquidateVars.borrowing = OPBorrowingLib.borrowCurrent(borrowVars.borrowPool, borrower);
         liquidateVars.collateralAmount = OPBorrowingLib.shareToAmount(collateral, borrowVars.collateralTotalShare, borrowVars.collateralTotalReserve);
 
         // check liquidable
