@@ -25,11 +25,17 @@ contract MockDexAgg is DexAggregatorInterface {
     uint buyAmount;
     uint sellAmount;
 
+    bool updatePriceFlag;
+
     function setPrice(uint256 price_, uint256 cAvgPrice_, uint256 hAvgPrice_, uint256 timestamp_) external {
         _price = price_ * (10 ** 24);
         _cAvgPrice = cAvgPrice_ * (10 ** 24);
         _hAvgPrice = hAvgPrice_ * (10 ** 24);
         _timestamp = timestamp_;
+    }
+
+    function setUpdatePriceFlag(bool _updatePriceFlag) external {
+        updatePriceFlag = _updatePriceFlag;
     }
 
     function getPrice(address desToken, address quoteToken, bytes memory data) external view override returns (uint256 price, uint8 decimals) {
@@ -62,6 +68,9 @@ contract MockDexAgg is DexAggregatorInterface {
         quoteToken;
         _timeWindow = timeWindow;
         require(data.isUniV2Class(), "DER");
+        if (updatePriceFlag) {
+            _hAvgPrice = _cAvgPrice;
+        }
         return true;
     }
 

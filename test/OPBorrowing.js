@@ -38,7 +38,7 @@ contract("OPBorrowing", async accounts => {
     let liquidatorXOLEHeld = 10000;
     let priceDiffRatio = 10;
     let borrowRateOfPerBlock = 1;// 0.01%
-    let dexData = "0x02";
+    let dexData = "0x03";
     let poolInitSupply = 1000000;
     let initLiquidity = 1000000;
     let initPrice = 1;
@@ -133,6 +133,12 @@ contract("OPBorrowing", async accounts => {
         equalBN("996024000000000000000000", await borrowPool.totalCash());
         equalBN("10000000000000000000000", await borrowingCtr.totalShares(collateralToken.address));
         equalBN("32000000000000000000", await borrowingCtr.totalShares(borrowToken.address));
+        // add collateral
+        let additionalCollateral = toWei(1);
+        await collateralToken.mint(borrower1, additionalCollateral);
+        await borrowingCtr.borrow(market0Id, collateralIndex, additionalCollateral, 0, {from: borrower1});
+        collateralOnChain = await borrowingCtr.activeCollaterals(borrower1, market0Id, collateralIndex);
+        equalBN(collateral.add(additionalCollateral), collateralOnChain);
     })
 
     it("borrow token0 successful", async () => {
@@ -424,6 +430,18 @@ contract("OPBorrowing", async accounts => {
         equalBN("5001000000000000000000", await borrowingCtr.totalShares(collateralToken.address));
         equalBN(toWei(960), await borrowToken.balanceOf(borrower1));
         equalBN("1000200000000000000000", await borrowPool.borrowBalanceStored(borrower1));
+    })
+
+    it("repay a bit and redeem collateral eq 0 successful", async () => {
+        let collateral = toWei(10000);
+        let collateralIndex = true;
+        let collateralToken = token1;
+        let borrowing = toWei(2000);
+        await collateralToken.mint(borrower1, collateral);
+        await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1});
+        await borrowingCtr.repay(market0Id, collateralIndex, 1, true, {from: borrower1});
+        let collateralOnChain = await borrowingCtr.activeCollaterals(borrower1, market0Id, collateralIndex);
+        equalBN(collateral, collateralOnChain);
     })
 
     it("repay all token0 successful", async () => {
@@ -972,6 +990,81 @@ contract("OPBorrowing", async accounts => {
         await borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator, gas: 8000000});
     })
 
+    it("get collateral ratio with borrows or collateral eq 0 successful", async () => {
+        let collateral = toWei(1000);
+        let collateralIndex = false;
+        let collateralToken = token0;
+        let borrowToken = token1;
+        let borrowPool = pool1;
+        let borrowing = toWei(500);
+        let defRatio = "1000000";
+        let c0CollateralRatio = await borrowingCtr.collateralRatio(market0Id, collateralIndex, borrower1);
+        equalBN(defRatio, c0CollateralRatio);
+
+        await collateralToken.mint(borrower1, collateral);
+        await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1});
+        await borrowToken.mint(borrower1, borrowing);
+        await borrowToken.approve(borrowPool.address, borrowing.mul(toBN(2)), {from: borrower1});
+        await borrowPool.repayBorrowBehalf(borrower1, borrowing.add(toWei(1)), {from: borrower1});
+    })
+
+    it("redeem with borrows eq 0 successful", async () => {
+        let collateral = toWei(1000);
+        let collateralIndex = false;
+        let collateralToken = token0;
+        let borrowToken = token1;
+        let borrowPool = pool1;
+        let borrowing = toWei(500);
+        let defRatio = "1000000";
+
+        await collateralToken.mint(borrower1, collateral);
+        await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1});
+        await borrowToken.mint(borrower1, borrowing);
+        await borrowToken.approve(borrowPool.address, borrowing.mul(toBN(2)), {from: borrower1});
+        await borrowPool.repayBorrowBehalf(borrower1, borrowing.add(toWei(1)), {from: borrower1});
+
+        await borrowingCtr.redeem(market0Id, collateralIndex, collateral, {from: borrower1});
+        let cb0CollateralRatio = await borrowingCtr.collateralRatio(market0Id, collateralIndex, borrower1);
+        equalBN(defRatio, cb0CollateralRatio);
+        equalBN(collateral, await collateralToken.balanceOf(borrower1));
+    })
+
+    it("liquidate with borrows eq 0 unsuccessful", async () => {
+        let collateral = toWei(1000);
+        let collateralIndex = false;
+        let collateralToken = token0;
+        let borrowToken = token1;
+        let borrowPool = pool1;
+        let borrowing = toWei(500);
+
+        await collateralToken.mint(borrower1, collateral);
+        await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1});
+        await borrowToken.mint(borrower1, borrowing);
+        await borrowToken.approve(borrowPool.address, borrowing.mul(toBN(2)), {from: borrower1});
+        await borrowPool.repayBorrowBehalf(borrower1, borrowing.add(toWei(1)), {from: borrower1});
+
+        await xoleCtr.mint(toWei(liquidatorXOLEHeld), {from: liquidator});
+        await expectRevert(
+            borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator}),
+            "BIH");
+    })
+
+    it("update price with liquidation successful", async () => {
+        let collateral = toWei(4000);
+        let collateralIndex = true;
+        let collateralToken = token1;
+        let borrowing = toWei(1800);
+        await collateralToken.mint(borrower1, collateral);
+        await borrowingCtr.borrow(market0Id, collateralIndex, collateral, borrowing, {from: borrower1});
+        await dexAggCtr.setPrice(0, 0, 2, 0, {from: adminAcc});
+        await expectRevert(
+            borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator}),
+            "BIH")
+        await dexAggCtr.setUpdatePriceFlag(true);
+        await xoleCtr.mint(toWei(liquidatorXOLEHeld), {from: liquidator});
+        await borrowingCtr.liquidate(market0Id, collateralIndex, borrower1, {from: liquidator});
+    })
+
     it("suspend successful", async () => {
         await controllerCtr.setSuspend(true, {from: adminAcc});
         await expectRevert(
@@ -987,7 +1080,6 @@ contract("OPBorrowing", async accounts => {
             borrowingCtr.liquidate(market0Id, true, borrower1, {from: liquidator}),
             "Suspended borrowing")
     })
-
 
     it("initialize market config sender neq admin unsuccessful", async () => {
         await expectRevert(
@@ -1032,7 +1124,6 @@ contract("OPBorrowing", async accounts => {
             borrowingCtr.setTwaLiquidity([0], [[liqToken0, liqToken1]], {from: liquidator}),
             "Only admin or dev")
     })
-
 
     it("set marketConf successful", async () => {
         await borrowingCtr.setMarketConf(1, marketConf, {from: adminAcc});
