@@ -2,4 +2,7 @@
 
 
 
-# Over-collateralized Borrowing
+# Over-collateralized Borrowing Protocol
+=================
+
+The Over-collateralized Borrowing Protocol is a permissionless lending and borrowing protocol that enables borrowers to collateralize and borrow any pair on DEXs efficiently and securely.
