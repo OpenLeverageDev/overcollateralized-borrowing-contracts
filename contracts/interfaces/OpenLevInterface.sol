@@ -22,4 +22,6 @@ interface OpenLevInterface {
     function taxes(uint16 marketId, address token, uint index) external view returns (uint24);
 
     function getMarketSupportDexs(uint16 marketId) external view returns (uint32[] memory);
+
+    function updatePrice(uint16 marketId, bytes memory dexData) external;
 }
