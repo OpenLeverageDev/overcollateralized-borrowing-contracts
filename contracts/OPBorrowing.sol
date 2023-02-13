@@ -351,7 +351,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
         );
     }
 
-    /// @notice Borrower collateral ratio
+    /// @notice Calculate borrower collateral ratio for display purposes
     /// @dev This function will compute borrower collateral ratio=collateral * ratio / borrowing (10000 means 100%).
     /// If the collateral ratio is less than 10000, it can be liquidated
     /// @param marketId The market id
