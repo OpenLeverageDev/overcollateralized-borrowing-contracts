@@ -1167,6 +1167,36 @@ contract("OPBorrowing", async accounts => {
             "caller must be admin")
     })
 
+    it("set marketConf with illegal params unsuccessful", async () => {
+        let marketConf1 = [];
+        Object.assign(marketConf1, marketConf);
+        marketConf1[0] = 10000;
+        await expectRevert(
+            borrowingCtr.setMarketConf(1, marketConf1, {from: adminAcc}),
+            "CRI");
+        Object.assign(marketConf1, marketConf);
+
+        marketConf1[5] = 10000;
+        await expectRevert(
+            borrowingCtr.setMarketConf(1, marketConf1, {from: adminAcc}),
+            "LRI");
+
+        Object.assign(marketConf1, marketConf);
+        marketConf1[3] = 3000;
+        marketConf1[4] = 7001;
+        await expectRevert(
+            borrowingCtr.setMarketConf(1, marketConf1, {from: adminAcc}),
+            "BPI");
+
+        Object.assign(marketConf1, marketConf);
+        marketConf1[6] = 3000;
+        marketConf1[7] = 3000;
+        marketConf1[8] = 4001;
+        await expectRevert(
+            borrowingCtr.setMarketConf(1, marketConf1, {from: adminAcc}),
+            "LPI");
+    })
+
     it("set market dex successful", async () => {
         let dex = 5;
         await borrowingCtr.setMarketDex(1, dex, {from: adminAcc});

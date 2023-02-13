@@ -400,6 +400,11 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
     }
 
     function setMarketConf(uint16 marketId, OPBorrowingStorage.MarketConf calldata _marketConf) external override onlyAdmin {
+        require(_marketConf.insuranceRatio + _marketConf.poolReturnsRatio <= RATIO_DENOMINATOR, "BPI");
+        require(_marketConf.liquidatorReturnsRatio + _marketConf.liquidateInsuranceRatio + _marketConf.liquidatePoolReturnsRatio <= RATIO_DENOMINATOR, "LPI");
+        require(_marketConf.collateralRatio < RATIO_DENOMINATOR, "CRI");
+        require(_marketConf.liquidateFeesRatio < RATIO_DENOMINATOR, "LRI");
+
         marketsConf[marketId] = _marketConf;
         emit NewMarketConf(
             marketId,
@@ -552,6 +557,7 @@ contract OPBorrowing is DelegateInterface, Adminable, ReentrancyGuard, IOPBorrow
                 (buyBackSuccess, ) = address(liquidationConf.buyBack).call(
                     abi.encodeWithSelector(liquidationConf.buyBack.transferIn.selector, borrowToken, buyBackAmount)
                 );
+                OPBorrowingLib.safeApprove(IERC20(borrowToken), address(liquidationConf.buyBack), 0);
             }
         }
     }
