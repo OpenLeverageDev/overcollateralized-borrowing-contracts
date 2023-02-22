@@ -27,6 +27,12 @@ contract BorrowingHelper {
         BorrowingStatus status;
     }
 
+    struct CollateralVars {
+        uint256 collateral;
+        uint256 borrowing;
+        uint256 collateralRatio;
+    }
+
     uint internal constant RATIO_DENOMINATOR = 10000;
 
     function collateralRatios(
@@ -74,7 +80,11 @@ contract BorrowingHelper {
                 OPBorrowingStorage(address(borrowing)).openLev().updatePrice(marketId, dexData);
             }
         }
-        uint collateral = OPBorrowingStorage(address(borrowing)).activeCollaterals(borrower, marketId, collateralIndex);
+        uint collateral = OPBorrowingLib.shareToAmount(
+            result.collateral,
+            OPBorrowingStorage(address(borrowing)).totalShares(collateralToken),
+            IERC20(collateralToken).balanceOf(address(borrowing))
+        );
         uint borrowed = borrowPool.borrowBalanceCurrent(borrower);
         (uint collateralRatio, , , , , , , , , , ) = OPBorrowingStorage(address(borrowing)).marketsConf(marketId);
         uint maxPrice;
@@ -95,5 +105,26 @@ contract BorrowingHelper {
         }
         result.status = BorrowingStatus.UPDATING_PRICE;
         return result;
+    }
+
+    function getBorrowersCollateral(
+        IOPBorrowing borrowing,
+        uint16 marketId,
+        address[] calldata borrowers,
+        bool[] calldata collateralIndexes
+    ) external view returns (CollateralVars[] memory results) {
+        results = new CollateralVars[](borrowers.length);
+        (LPoolInterface pool0, LPoolInterface pool1, , , ) = OPBorrowingStorage(address(borrowing)).markets(marketId);
+        for (uint i = 0; i < borrowers.length; i++) {
+            CollateralVars memory item;
+            item.collateral = OPBorrowingStorage(address(borrowing)).activeCollaterals(borrowers[i], marketId, collateralIndexes[i]);
+            if (item.collateral > 0) {
+                item.collateralRatio = borrowing.collateralRatio(marketId, collateralIndexes[i], borrowers[i]);
+                LPoolInterface borrowPool = collateralIndexes[i] ? pool0 : pool1;
+                item.borrowing = borrowPool.borrowBalanceCurrent(borrowers[i]);
+            }
+            results[i] = item;
+        }
+        return results;
     }
 }
