@@ -9,7 +9,7 @@ import "./OPBuyBack.sol";
 contract OPBuyBackDelegator is DelegatorInterface, Adminable {
     constructor(
         address _ole,
-        address _wEth,
+        address _wrappedNativeToken,
         address _router1inch,
         address payable _admin,
         address implementation_
@@ -17,7 +17,7 @@ contract OPBuyBackDelegator is DelegatorInterface, Adminable {
         admin = payable(msg.sender);
         // Creator of the contract is admin during initialization
         // First delegate gets to initialize the delegator (i.e. storage contract)
-        delegateTo(implementation_, abi.encodeWithSelector(OPBuyBack(implementation_).initialize.selector, _ole, _wEth, _router1inch));
+        delegateTo(implementation_, abi.encodeWithSelector(OPBuyBack(implementation_).initialize.selector, _ole, _wrappedNativeToken, _router1inch));
         implementation = implementation_;
         // Set the proper admin now that initialization is done
         admin = _admin;
