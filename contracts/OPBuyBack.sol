@@ -11,7 +11,7 @@ import "./libraries/DexData.sol";
 import "./libraries/Utils.sol";
 import "./interfaces/OPBuyBackInterface.sol";
 import "./libraries/Aggregator1InchV5.sol";
-import "./IWETH.sol";
+import "./IWrappedNativeToken.sol";
 
 contract OPBuyBack is DelegateInterface, Adminable, ReentrancyGuard {
     using TransferHelper for IERC20;
@@ -20,7 +20,7 @@ contract OPBuyBack is DelegateInterface, Adminable, ReentrancyGuard {
     event BuyBacked (address token, uint256 sellAmount, uint256 boughtAmount);
 
     address public ole;
-    address public wEth;
+    address public wrappedNativeToken;
     address public router1inch;
 
     address private constant _ZERO_ADDRESS = address(0);
@@ -31,9 +31,9 @@ contract OPBuyBack is DelegateInterface, Adminable, ReentrancyGuard {
     /// @dev This function is supposed to call multiple times
     /// @param _ole The ole token address
     /// @param _router1inch The 1inch router address
-    function initialize(address _ole, address _wEth, address _router1inch) external onlyAdmin {
+    function initialize(address _ole, address _wrappedNativeToken, address _router1inch) external onlyAdmin {
         ole = _ole;
-        wEth = _wEth;
+        wrappedNativeToken = _wrappedNativeToken;
         router1inch = _router1inch;
     }
 
@@ -55,14 +55,14 @@ contract OPBuyBack is DelegateInterface, Adminable, ReentrancyGuard {
         }
     }
 
-    function buyBack(address token, uint sellAmount, uint minBuyAmount, bytes memory data) external nonReentrant onlyAdminOrDeveloper(){
-        require(token != ole, "Token err");
-        if (isNativeToken(token)) {
-            token = wEth;
-            IWETH(wEth).deposit{value : sellAmount}();
+    function buyBack(address sellToken, uint sellAmount, uint minBuyAmount, bytes memory data) external nonReentrant onlyAdminOrDeveloper(){
+        require(sellToken != ole, "Token err");
+        if (isNativeToken(sellToken)) {
+            sellToken = wrappedNativeToken;
+            IWrappedNativeToken(wrappedNativeToken).deposit{value : sellAmount}();
         }
-        uint boughtAmount = Aggregator1InchV5.swap1inch(router1inch, data, address(this), ole, token, sellAmount, minBuyAmount);
-        emit BuyBacked(token, sellAmount, boughtAmount);
+        uint boughtAmount = Aggregator1InchV5.swap1inch(router1inch, data, address(this), ole, sellToken, sellAmount, minBuyAmount);
+        emit BuyBacked(sellToken, sellAmount, boughtAmount);
     }
 
     function setRouter1inch(address _router1inch) external onlyAdmin() {
