@@ -15,9 +15,17 @@ library Aggregator1InchV5 {
     bytes4 constant SWAP = 0x12aa3caf;
     uint constant default_length = 32;
 
-    function swap1inch(address router, bytes memory data, address payee, address buyToken, address sellToken, uint sellAmount, uint minBuyAmount) internal returns (uint boughtAmount) {
+    function swap1inch(
+        address router,
+        bytes memory data,
+        address payee,
+        address buyToken,
+        address sellToken,
+        uint sellAmount,
+        uint minBuyAmount
+    ) internal returns (uint boughtAmount) {
         bytes4 functionName = getCallFunctionName(data);
-        if (functionName != UNISWAP_V3_SWAP){
+        if (functionName != UNISWAP_V3_SWAP) {
             // verify sell token
             require(to1InchSellToken(data, functionName) == sellToken, "sell token error");
         }
@@ -26,29 +34,31 @@ library Aggregator1InchV5 {
         IERC20(sellToken).safeApprove(router, sellAmount);
         (bool success, bytes memory returnData) = router.call(data);
         assembly {
-            if eq(success, 0) {revert(add(returnData, 0x20), returndatasize())}
+            if eq(success, 0) {
+                revert(add(returnData, 0x20), returndatasize())
+            }
         }
         IERC20(sellToken).safeApprove(router, 0);
         boughtAmount = IERC20(buyToken).balanceOf(payee) - buyTokenBalanceBefore;
-        require(boughtAmount >= minBuyAmount, '1inch: buy amount less than min');
+        require(boughtAmount >= minBuyAmount, "1inch: buy amount less than min");
     }
 
-    function getCallFunctionName(bytes memory data) private pure returns(bytes4 bts){
+    function getCallFunctionName(bytes memory data) private pure returns (bytes4 bts) {
         bytes memory subData = DexData.subByte(data, 0, 4);
         assembly {
             bts := mload(add(subData, 32))
         }
     }
 
-    function replace1InchSellAmount(bytes memory data, bytes4 functionName, uint sellAmount) private pure returns(bytes memory){
+    function replace1InchSellAmount(bytes memory data, bytes4 functionName, uint sellAmount) private pure returns (bytes memory) {
         uint startIndex;
-        if (functionName == SWAP){
+        if (functionName == SWAP) {
             startIndex = 164;
-        } else if (functionName == UNO_SWAP){
+        } else if (functionName == UNO_SWAP) {
             startIndex = 36;
-        } else if (functionName == UNISWAP_V3_SWAP){
+        } else if (functionName == UNISWAP_V3_SWAP) {
             startIndex = 4;
-        }  else {
+        } else {
             revert("USF");
         }
         bytes memory b1 = DexData.concat(DexData.subByte(data, 0, startIndex), DexData.toBytes(sellAmount));
@@ -56,11 +66,11 @@ library Aggregator1InchV5 {
         return DexData.concat(b1, DexData.subByte(data, secondIndex, data.length - secondIndex));
     }
 
-    function to1InchSellToken(bytes memory data, bytes4 functionName) private pure returns(address){
+    function to1InchSellToken(bytes memory data, bytes4 functionName) private pure returns (address) {
         uint startIndex;
-        if (functionName == SWAP){
+        if (functionName == SWAP) {
             startIndex = 36;
-        } else if (functionName == UNO_SWAP){
+        } else if (functionName == UNO_SWAP) {
             startIndex = 4;
         } else {
             revert("USF");
@@ -68,5 +78,4 @@ library Aggregator1InchV5 {
         bytes memory bts = DexData.subByte(data, startIndex, default_length);
         return DexData.bytesToAddress(bts);
     }
-
 }

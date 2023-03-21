@@ -9,7 +9,6 @@ interface IAggregationExecutor {
 }
 
 contract Mock1inchRouter {
-
     address mockExchangeAddress;
     uint256 public verifyAmount;
     uint256 public verifyMinReturn;
@@ -20,7 +19,7 @@ contract Mock1inchRouter {
     uint256 private constant _PARTIAL_FILL = 1 << 0;
     uint256 private constant _REQUIRES_EXTRA_ETH = 1 << 1;
 
-    constructor (address _mockExchangeAddress) {
+    constructor(address _mockExchangeAddress) {
         mockExchangeAddress = _mockExchangeAddress;
     }
 
@@ -39,14 +38,7 @@ contract Mock1inchRouter {
         SwapDescription calldata desc,
         bytes calldata permit,
         bytes calldata data
-    )
-    external
-    payable
-    returns (
-        uint256 returnAmount,
-        uint256 spentAmount
-    )
-    {
+    ) external payable returns (uint256 returnAmount, uint256 spentAmount) {
         executor;
         permit;
         data;
@@ -62,12 +54,16 @@ contract Mock1inchRouter {
         // we leave 1 wei on the router for gas optimisations reasons
         returnAmount = dstToken.balanceOf(address(this));
         if (returnAmount == 0) revert("ZeroReturnAmount");
-        { returnAmount--; }
+        {
+            returnAmount--;
+        }
         if (desc.flags & _PARTIAL_FILL != 0) {
             uint256 unspentAmount = srcToken.balanceOf(address(this));
             if (unspentAmount > 1) {
                 // we leave 1 wei on the router for gas optimisations reasons
-                { unspentAmount--; }
+                {
+                    unspentAmount--;
+                }
                 spentAmount -= unspentAmount;
                 srcToken.transfer(payable(msg.sender), unspentAmount);
             }
@@ -80,15 +76,11 @@ contract Mock1inchRouter {
         dstToken.transfer(dstReceiver, returnAmount);
     }
 
-    function uniswapV3Swap(
-        uint256 amount,
-        uint256 minReturn,
-        uint256[] calldata pools
-    ) external payable returns(uint256 returnAmount) {
+    function uniswapV3Swap(uint256 amount, uint256 minReturn, uint256[] calldata pools) external payable returns (uint256 returnAmount) {
         require(amount == verifyAmount, "amount error");
         require(minReturn == verifyMinReturn, "minReturn error");
         uint len = verifyPools.length;
-        for(uint i = 0; i < len; i++){
+        for (uint i = 0; i < len; i++) {
             require(pools[i] == verifyPools[i], "pools error");
         }
         _execute(verifyDstToken);
@@ -96,17 +88,12 @@ contract Mock1inchRouter {
         verifyDstToken.transfer(payable(msg.sender), returnAmount);
     }
 
-    function unoswap(
-        IERC20 srcToken,
-        uint256 amount,
-        uint256 minReturn,
-        uint256[] calldata pools
-    ) external payable returns(uint256 returnAmount) {
+    function unoswap(IERC20 srcToken, uint256 amount, uint256 minReturn, uint256[] calldata pools) external payable returns (uint256 returnAmount) {
         require(srcToken == verifySrcToken, "srcToken error");
         require(amount == verifyAmount, "amount error");
         require(minReturn == verifyMinReturn, "minReturn error");
         uint len = verifyPools.length;
-        for(uint i = 0; i < len; i++){
+        for (uint i = 0; i < len; i++) {
             require(pools[i] == verifyPools[i], "pools error");
         }
         _execute(verifyDstToken);
@@ -114,15 +101,11 @@ contract Mock1inchRouter {
         verifyDstToken.transfer(payable(msg.sender), returnAmount);
     }
 
-    function clipperSwap(
-        uint256 amount,
-        uint256 minReturn,
-        uint256[] calldata pools
-    ) external payable returns(uint256 returnAmount) {
+    function clipperSwap(uint256 amount, uint256 minReturn, uint256[] calldata pools) external payable returns (uint256 returnAmount) {
         require(amount == verifyAmount, "amount error");
         require(minReturn == verifyMinReturn, "minReturn error");
         uint len = verifyPools.length;
-        for(uint i = 0; i < len; i++){
+        for (uint i = 0; i < len; i++) {
             require(pools[i] == verifyPools[i], "pools error");
         }
         _execute(verifyDstToken);
@@ -150,11 +133,7 @@ contract Mock1inchRouter {
         verifyDstToken = dstToken;
     }
 
-    function _execute(
-        IERC20 dstToken
-    ) private {
+    function _execute(IERC20 dstToken) private {
         dstToken.transferFrom(mockExchangeAddress, address(this), dstToken.balanceOf(mockExchangeAddress));
     }
-
 }
-

@@ -74,7 +74,7 @@ library DexData {
         return toDex(data) != DEX_UNIV3;
     }
 
-    function subByte(bytes memory data, uint startIndex, uint len) internal pure returns(bytes memory bts){
+    function subByte(bytes memory data, uint startIndex, uint len) internal pure returns (bytes memory bts) {
         require(startIndex <= data.length && data.length - startIndex >= len, "DexData: wrong data format");
         uint addr;
         assembly {
@@ -144,10 +144,7 @@ library DexData {
             } {
                 mstore(mc, mload(cc))
             }
-            mstore(0x40, and(
-            add(add(end, iszero(add(length, mload(_preBytes)))), 31),
-            not(31)
-            ))
+            mstore(0x40, and(add(add(end, iszero(add(length, mload(_preBytes)))), 31), not(31)))
         }
         return tempBytes;
     }
