@@ -16,8 +16,8 @@ import "./IWrappedNativeToken.sol";
 contract OPBuyBack is DelegateInterface, Adminable, ReentrancyGuard {
     using TransferHelper for IERC20;
     using DexData for bytes;
-    event Received (address token, uint256 inAmount, uint256 received);
-    event BuyBacked (address token, uint256 sellAmount, uint256 boughtAmount);
+    event Received(address token, uint256 inAmount, uint256 received);
+    event BuyBacked(address token, uint256 sellAmount, uint256 boughtAmount);
 
     address public ole;
     address public wrappedNativeToken;
@@ -46,31 +46,30 @@ contract OPBuyBack is DelegateInterface, Adminable, ReentrancyGuard {
         }
     }
 
-    function withdraw(address token, address to, uint amount) external onlyAdmin(){
+    function withdraw(address token, address to, uint amount) external onlyAdmin {
         if (isNativeToken(token)) {
-            (bool success,) = to.call{value : amount}("");
+            (bool success, ) = to.call{ value: amount }("");
             require(success);
         } else {
             IERC20(token).safeTransfer(to, amount);
         }
     }
 
-    function buyBack(address sellToken, uint sellAmount, uint minBuyAmount, bytes memory data) external nonReentrant onlyAdminOrDeveloper(){
+    function buyBack(address sellToken, uint sellAmount, uint minBuyAmount, bytes memory data) external nonReentrant onlyAdminOrDeveloper {
         require(sellToken != ole, "Token err");
         if (isNativeToken(sellToken)) {
             sellToken = wrappedNativeToken;
-            IWrappedNativeToken(wrappedNativeToken).deposit{value : sellAmount}();
+            IWrappedNativeToken(wrappedNativeToken).deposit{ value: sellAmount }();
         }
         uint boughtAmount = Aggregator1InchV5.swap1inch(router1inch, data, address(this), ole, sellToken, sellAmount, minBuyAmount);
         emit BuyBacked(sellToken, sellAmount, boughtAmount);
     }
 
-    function setRouter1inch(address _router1inch) external onlyAdmin() {
+    function setRouter1inch(address _router1inch) external onlyAdmin {
         router1inch = _router1inch;
     }
 
     function isNativeToken(address token) private pure returns (bool) {
         return token == _ZERO_ADDRESS;
     }
-
 }
