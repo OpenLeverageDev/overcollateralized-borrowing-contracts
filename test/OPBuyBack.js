@@ -64,7 +64,7 @@ contract("OPBuyBack Test", async accounts => {
         assert.equal(await web3.eth.getBalance(opBuyBack.address), 0);
         await expectRevert(
             opBuyBack.withdraw(eth, withdrawAddress, toWei(1).toString()),
-            'VM Exception while processing transaction: revert'
+            'revert'
         );
     })
 
