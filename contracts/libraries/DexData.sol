@@ -73,4 +73,82 @@ library DexData {
     function isUniV2Class(bytes memory data) internal pure returns (bool) {
         return toDex(data) != DEX_UNIV3;
     }
+
+    function subByte(bytes memory data, uint startIndex, uint len) internal pure returns(bytes memory bts){
+        require(startIndex <= data.length && data.length - startIndex >= len, "DexData: wrong data format");
+        uint addr;
+        assembly {
+            addr := add(data, 32)
+        }
+        addr = addr + startIndex;
+        bts = new bytes(len);
+        uint btsptr;
+        assembly {
+            btsptr := add(bts, 32)
+        }
+        for (; len > 32; len -= 32) {
+            assembly {
+                mstore(btsptr, mload(addr))
+            }
+            btsptr += 32;
+            addr += 32;
+        }
+        uint mask = 256 ** (32 - len) - 1;
+        assembly {
+            let srcpart := and(mload(addr), not(mask))
+            let destpart := and(mload(btsptr), mask)
+            mstore(btsptr, or(destpart, srcpart))
+        }
+    }
+
+    function bytesToAddress(bytes memory bys) internal pure returns (address addr) {
+        require(bys.length == 32, "length error");
+        assembly {
+            addr := mload(add(bys, 32))
+        }
+    }
+
+    function toBytes(uint _num) internal pure returns (bytes memory _ret) {
+        assembly {
+            _ret := mload(0x10)
+            mstore(_ret, 0x20)
+            mstore(add(_ret, 0x20), _num)
+        }
+    }
+
+    function concat(bytes memory _preBytes, bytes memory _postBytes) internal pure returns (bytes memory) {
+        bytes memory tempBytes;
+        assembly {
+            tempBytes := mload(0x40)
+            let length := mload(_preBytes)
+            mstore(tempBytes, length)
+            let mc := add(tempBytes, 0x20)
+            let end := add(mc, length)
+            for {
+                let cc := add(_preBytes, 0x20)
+            } lt(mc, end) {
+                mc := add(mc, 0x20)
+                cc := add(cc, 0x20)
+            } {
+                mstore(mc, mload(cc))
+            }
+            length := mload(_postBytes)
+            mstore(tempBytes, add(length, mload(tempBytes)))
+            mc := end
+            end := add(mc, length)
+            for {
+                let cc := add(_postBytes, 0x20)
+            } lt(mc, end) {
+                mc := add(mc, 0x20)
+                cc := add(cc, 0x20)
+            } {
+                mstore(mc, mload(cc))
+            }
+            mstore(0x40, and(
+            add(add(end, iszero(add(length, mload(_preBytes)))), 31),
+            not(31)
+            ))
+        }
+        return tempBytes;
+    }
 }
